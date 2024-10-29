@@ -1,6 +1,7 @@
 clear all
 close all
 clc
+% Testing change 
 
 % Define folder containing test images
 folder_path = 'test_images';
