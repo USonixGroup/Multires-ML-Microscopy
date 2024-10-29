@@ -61,13 +61,13 @@ for imageNumber = 1:length(imageFiles)
     % Defining index i
     i = 1;
     
-    for threshold = 1:threshold_max
-        
+    for threshold = 1:threshold_max  
         threshold_vals(i) = threshold;
         
         % threshold is the radius of the low frequency region to block
     
-        % Create a binary mask for high-pass filtering
+        % Create a binary mask for high-pass filtering (>)
+        % Create a binary mask for low-pass filtering (<)
         % 1 if outside filter, 0 if inside filter
         high_pass_filter = double(D > threshold);
     
@@ -89,35 +89,35 @@ for imageNumber = 1:length(imageFiles)
         imgs = rescale(imgs);
         img_filtered = rescale(img_filtered);
     
-        % % Displaying results
-        % tiledlayout(2,2);
-        % 
-        % % Displaying original grayscale image
-        % nexttile(1);
-        % imshow(imgs)
-        % title('Grayscale Original Image')
-        % 
-        % % Display Fourier transform
-        % nexttile(2);
-        % imagesc(log_magnitude_ft)
-        % colormap(gca, jet); % Jet colormap
-        % colorbar; % Colorbar to show intensity scale
-        % title('Fourier Transform of Image');
-        % 
-        % % Displaying filtered fourier transform
-        % nexttile(4);
-        % imagesc(log_magnitude_ft_filtered);
-        % colormap(gca, jet);
-        % colorbar;
-        % title('Filtered Fourier Transform (High-Pass)');
-        % 
-        % % Display the filtered image
-        % nexttile(3);
-        % imshow(img_filtered);
-        % title('Image After High-Pass Filtering');
-        % 
-        % drawnow
-        % pause(5/1000)
+        % Displaying results
+        tiledlayout(2,2);
+
+        % Displaying original grayscale image
+        nexttile(1);
+        imshow(imgs)
+        title('Grayscale Original Image')
+
+        % Display Fourier transform
+        nexttile(2);
+        imagesc(log_magnitude_ft)
+        colormap(gca, jet); % Jet colormap
+        colorbar; % Colorbar to show intensity scale
+        title('Fourier Transform of Image');
+
+        % Displaying filtered fourier transform
+        nexttile(4);
+        imagesc(log_magnitude_ft_filtered);
+        colormap(gca, jet);
+        colorbar;
+        title('Filtered Fourier Transform (High-Pass)');
+
+        % Display the filtered image
+        nexttile(3);
+        imshow(img_filtered);
+        title('Image After High-Pass Filtering');
+
+        drawnow
+        pause(5/1000)
         
         err(imageNumber, i) = immse(img_filtered, imgs);
         peaksnr(imageNumber, i) = psnr(img_filtered, imgs);
