@@ -37,32 +37,34 @@ imagelocs=[0; cumsum(counts)]; %starting position offset for each image in the l
 
 %%
 
-for i=[1:length(counts)
+for i=[1:length(counts)] %for the number of images
 
-    noannotations=counts(i);
 
-    im=imread(["./LiveCellsIms1/livecell_train_val_images/"+FileNamesIDS{i, 2}]); %change with image path as needed
+    im = imread( ["./LiveCellsIms1/livecell_train_val_images/"+FileNamesIDS{i, 2   } ]   ); %change with image path as needed
         % if size(im, 3)==1
         %     im=repmat(im, [1 1 3]); %turn image into pseudo RGB (all three channels the same) if in B&W, as this is required by the NN
         % end
 
 
-        masks = false([h,w,noannotations]);
-        for j=[1:noannotations] %can also use parfor here if needed but sometimes results in errors
+        masks = false([h,w,counts(i)]); %where counts(i) is the number of segments in that image
+        for j=[1:counts(i)] %can also use parfor here if needed but sometimes results in errors
             bbox(j,:)=(bboxDat(imagelocs(i)+j, :)); %starting position offset (imagelocs...)+the index within the current image
             polygon=cell2mat(PolyData(imagelocs(i)+j,1));
             masks(:,:,j)=poly2mask( polygon(1,1:2:end), polygon(1,2:2:end),h, w); %turn polygon data into binary masks
         end
-        label(1:noannotations,1 )="CellA"; %all cells are annotated as CellA at the moment
-        label=categorical(label)
+        label(1:counts(i),1 )="CellA"; %all cells are annotated as CellA at the moment
+        label=categorical(label);
         %imshow(denseMasks(:,:,2))
 
         save(["DSFs/label_"+FileNamesIDS{i, 2}+".mat"], "im", "bbox","label", "masks") %write data for current image to a .mat file
-        clear bbox polygon masks label noannotations j %clear data so now ones can be written
+        clear bbox polygon masks label j %clear data so now ones can be written
 
         disp(["Image: "+i+" Percent: "+i/length(imagelocs)*100+"%"]) %print progress
 
 end
+
+
+
 
 
 
