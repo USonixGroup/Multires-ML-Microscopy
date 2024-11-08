@@ -36,9 +36,8 @@ c=unique(ImageIDS(:,1));
 imagelocs=[0; cumsum(counts)]; %starting position offset for each image in the list of data 
 
 %%
-%bug: does not do the last image
 
-for i=[1:length(counts)+1]
+for i=[1:length(counts)
 
     noannotations=counts(i);
 
@@ -50,12 +49,12 @@ for i=[1:length(counts)+1]
 
         masks = false([h,w,noannotations]);
         for j=[1:noannotations] %can also use parfor here if needed but sometimes results in errors
-            bbox(j,:)=(bboxDat(imagelocs(i)2+j, :)); %starting position offset (imagelocs...)+the index within the current image
+            bbox(j,:)=(bboxDat(imagelocs(i)+j, :)); %starting position offset (imagelocs...)+the index within the current image
             polygon=cell2mat(PolyData(imagelocs(i)+j,1));
             masks(:,:,j)=poly2mask( polygon(1,1:2:end), polygon(1,2:2:end),h, w); %turn polygon data into binary masks
         end
         label(1:noannotations,1 )="CellA"; %all cells are annotated as CellA at the moment
-
+        label=categorical(label)
         %imshow(denseMasks(:,:,2))
 
         save(["DSFs/label_"+FileNamesIDS{i, 2}+".mat"], "im", "bbox","label", "masks") %write data for current image to a .mat file

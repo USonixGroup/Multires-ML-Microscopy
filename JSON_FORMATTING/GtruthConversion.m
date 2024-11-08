@@ -56,7 +56,7 @@ k=k+j;
 end
 
 
-clear temp i j
+clear Temp i j
 
 
 NewLabelData=cell2table(NewLabelData);
