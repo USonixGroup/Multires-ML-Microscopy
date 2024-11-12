@@ -2,6 +2,8 @@ clear all
 close all
 clc
 
+%%
+
 % Define folder containing test images
 folder_path = 'test_images';
 imageFiles = dir(fullfile(folder_path, '*.png'));
