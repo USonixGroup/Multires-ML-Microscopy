@@ -40,5 +40,5 @@ for i=1:nocells
 
 end
 
-%% check masks for an image
-imshow(denseMasks(:,:,2100));
+% %% check masks for an image
+%imshow(denseMasks(:,:,2100));
