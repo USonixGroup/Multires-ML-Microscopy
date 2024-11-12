@@ -71,32 +71,46 @@ for imageNumber = 1:1
         imagesc(D_img)
         title(['Diagonal Detail Coef. of Level ' num2str(level)])
         
-        C_zeroed = C;
+        C_approx = C;
         
-        % for j = 1:level
-        %     [H, V, D] = detcoef2('all', C, S, j);
-        %     % Zero out the detail coefficients for this level
-        %     idxH = detcoef2('h', C, S, j); % Indices of horizontal detail
-        %     idxV = detcoef2('v', C, S, j); % Indices of vertical detail
-        %     idxD = detcoef2('d', C, S, j); % Indices of diagonal detail
-        %     C_zeroed(idxH) = 0;
-        %     C_zeroed(idxV) = 0;
-        %     C_zeroed(idxD) = 0;
-        % end
+        % Zero out the detail coefficients for each level up to the specified level
+        for j = 1:level
+            % Determine the starting indices for the details at this level
+            % Size of the current level's detail coefficients
+            level_size = S(end-j+1, :);
+            num_coeffs = prod(level_size);
+            
+            % Calculate starting indices for H, V, and D in the coefficient array C
+            startIdxH = sum(prod(S(1:end-j, :), 2)) + 1;
+            startIdxV = startIdxH + num_coeffs;
+            startIdxD = startIdxV + num_coeffs;
+            
+            % Zero out the coefficients in the C array for horizontal, vertical, and diagonal details
+            C_approx(startIdxH:startIdxH + num_coeffs - 1) = 0; % Horizontal detail
+            C_approx(startIdxV:startIdxV + num_coeffs - 1) = 0; % Vertical detail
+            C_approx(startIdxD:startIdxD + num_coeffs - 1) = 0; % Diagonal detail
+        end
 
-        % H_img = 0;
-        H_zeroed = zeros(size(H_img));
-        % V_img = 0;
-        V_zeroed = zeros(size(V_img));
-        % D_img = 0;
-        D_zeroed = zeros(size(D_img));
 
-        % Reconstruct and display the approximation image for this level
-        reconstruction = idwt2(A_img, H_img, V_img, D_img, 'db8');
+        % Reconstruct the image using only the approximation coefficients
+        reconstructed_img = waverec2(C_approx, S, 'db8');
+        
+        % Resize the reconstructed image to match the original dimensions, if necessary
+        if size(reconstructed_img) ~= size(imgs)
+            reconstructed_img = imresize(reconstructed_img, size(imgs));
+        end
+
+        % Calculate SSIM between the original and reconstructed image
+        ssim_val = ssim(double(reconstructed_img), imgs);
+        
+        % Display the SSIM value
+        disp(['Level ' num2str(level) ': SSIM = ' num2str(ssim_val)]);
+        
+        % Display the reconstructed image
         figure
-        imshow(uint8(reconstruction))
-        title(['Reconstructed Image from Level ' num2str(level)])
-        
+        imagesc(uint8(reconstructed_img))
+        colormap(gray)
+        title(['Reconstructed Image using Approximation Coefficients of Level ' num2str(level)])
 
     end
 
