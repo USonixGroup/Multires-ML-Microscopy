@@ -3,7 +3,7 @@ close all
 clc
 
 % Define folder containing test images
-folder_path = 'RPE_Dataset';
+folder_path = 'test_images';
 imageFiles = dir(fullfile(folder_path, '*.png'));
 
 % Change to for imageNumber = 1:1 for only one image analysis
@@ -34,7 +34,7 @@ for imageNumber = 1:1
 
     % Levels of decomposition
     n = 5;
-    wavelet = 'db8';
+    wavelet = 'db5';
 
     % Perform wavelet decomposition up to n levels
     % C = wavelet decomposition vector
@@ -105,7 +105,7 @@ for imageNumber = 1:1
         
         % Calculate SSIM and PSNR between the original and reconstructed image
         ssim_val = ssim(double(reconstructed_img), imgs);
-        psnr_val = psnr(double(reconstructed_img), imgs);
+        psnr_val = psnr(double(reconstructed_img)/ 255, double(imgs)/ 255);
 
         % Display the SSIM and PSNR value
         disp(['Level ' num2str(level) ': SSIM = ' num2str(ssim_val)]);
