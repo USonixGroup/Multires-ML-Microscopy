@@ -9,12 +9,12 @@
 
 
 # Request 1 gigabyte of RAM per core. 
-#$ -l mem=2G
+#$ -l mem=1G
 # Request 15 gigabytes of TMPDIR space (default is 10 GB)
 #$ -l tmpfs=25G
 # Request a number of threads (which will use that number of cores). 
 # On Myriad you can set the number of threads to a maximum of 36. 
-#$ -pe smp 36
+#$ -pe smp 24
 # Request one MATLAB licence - makes sure your job doesn't start 
 # running until sufficient licenses are free.
 #$ -l matlab=1
@@ -22,7 +22,7 @@
 
 
 # Set the name of the job.
-#$ -N Res101
+#$ -N New50
 
 # Set the working directory to somewhere in your scratch space.
 # This is a necessary step as compute nodes cannot write to $HOME.
@@ -43,13 +43,11 @@ module list
 # If you do not copy them in, you must always refer to them using a
 # full path so they can be found, eg. ~/Scratch/Matlab_examples/analyse.m
 
-cp ~/Scratch/TrainV3/Trainer1.m $TMPDIR
-cp ~/Scratch/TrainV3/cocoAnnotationMATReader.m $TMPDIR
-cp ~/Scratch/TrainV3/MaskRCNNResnet101.mat $TMPDIR
+cp ~/Scratch/TrainV4/Trainer1.m $TMPDIR
+cp ~/Scratch/TrainV4/cocoAnnotationMATReader.m $TMPDIR
+cp ~/Scratch/TrainV4/MaskRCNNResnet50.mat $TMPDIR
 
 
-#cp -r ~/Scratch/TrainV1/DSFs $TMPDIR
-#cp -r ~/Scratch/TrainV1/ValDSFs $TMPDIR
 
 
 # These echoes output what you are about to run

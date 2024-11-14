@@ -3,12 +3,20 @@ clc
 close all
 
 
-load("trainedMaskRCNN-2024-11-12-00-45-27.mat")
+%% run image segmentation
+load("RESNET101_net_checkpoint__800__2024_11_13__11_27_26.mat")
 dsTest= imageDatastore("TestIms/")
 dsResults= segmentObjects(net, dsTest, "Threshold",0.5)
 
-%%
-dsResults = fileDatastore("./SegmentObjectResults05", ReadFcn=@(x)SegMATReader(x)); %training data
+%% evaluate
+clc
+clear
+
+
+
+
+
+dsResults = fileDatastore("./SegmentObjectResults/", ReadFcn=@(x)SegMATReader(x)); %training data
 
 dsTruth  = fileDatastore("./TestDSFs", ReadFcn=@(x)TestMATReader(x)); %training data
 

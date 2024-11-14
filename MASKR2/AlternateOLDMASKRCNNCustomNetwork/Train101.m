@@ -14,11 +14,23 @@ classNames = [classNames {'background'}];
 
 
 
+
 Datdir="../";
 
 ds = fileDatastore([Datdir+"DSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training data
-valds=fileDatastore([Datdir+"ValDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %validation data
+ds = fileDatastore("../DSFs/label_A172_Phase_A7_1_00d00h00m_2.tif.mat", ReadFcn=@(x)cocoAnnotationMATReader(x)); %training data
+
+%valds=fileDatastore([Datdir+"ValDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %validation data
 trainClassNames = ["CellA"];
+imageSize=[520 704 3];
+numClasses = numel(classNames);
+% Add a background class
+classNames = [trainClassNames {'background'}];
+
+
+params = createMaskRCNNConfig(imageSize, numClasses, classNames);
+
+
 
 if canUseGPU
     executionEnvironment = "gpu";
@@ -30,8 +42,8 @@ initialLearnRate = 0.0005;
 momemtum = 0.9;
 decay = 0.0001;
 velocity = [];
-maxEpochs = 30;
-minibatchSize = 6;
+maxEpochs = 2;
+minibatchSize = 1;
 
 
 myMiniBatchFcn = @(img, boxes, labels, masks) deal(cat(4, img{:}), boxes, labels, masks);
@@ -43,10 +55,16 @@ mb = minibatchqueue(ds, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
                             "OutputEnvironment", [executionEnvironment,"cpu","cpu","cpu"]);
 
 
+
+
+
 %%
 
 numEpoch = 1;
 numIteration = 1; 
+
+
+doTraining=1;
 
 start = tic;
 if doTraining
