@@ -25,7 +25,7 @@ for imageNumber = 1:1
 
     %%
     % Coverts image to grayscale by taking mean of the 3 colour channels
-    imgs=mean(im,3);
+    imgs = mean(im,3);
     
     
     %%
