@@ -22,7 +22,7 @@
 
 
 # Set the name of the job.
-#$ -N NOVA50
+#$ -N NEW50
 
 # Set the working directory to somewhere in your scratch space.
 # This is a necessary step as compute nodes cannot write to $HOME.
@@ -43,11 +43,9 @@ module list
 # If you do not copy them in, you must always refer to them using a
 # full path so they can be found, eg. ~/Scratch/Matlab_examples/analyse.m
 
-cp ~/Scratch/TrainV4/Trainer1.m $TMPDIR
-cp ~/Scratch/TrainV4/cocoAnnotationMATReader.m $TMPDIR
-cp ~/Scratch/TrainV4/MaskRCNNResnet50.mat $TMPDIR
-cp ~/Scratch/TrainV4/timeBasedDecayLearnRate.m $TMPDIR
-
+cp ~/Scratch/TrainV5/TRAIN.m $TMPDIR
+cp ~/Scratch/TrainV5/cocoAnnotationMATReader.m $TMPDIR
+cp -r ~/Scratch/TrainV5/src $TMPDIR
 
 
 
@@ -57,7 +55,7 @@ echo "Running MATLAB..."
 echo ""
 
 #run matlab script(s)
-matlab -nosplash -nodesktop -nodisplay < Trainer1.m
+matlab -nosplash -nodesktop -nodisplay < TRAIN.m
 
 
 # tar up all contents of $TMPDIR back into your space

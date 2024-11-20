@@ -1,53 +1,31 @@
 clear
 clc
 close all
-
 addpath('./src');
-load("Net101.mat");
-
-%%
-trainCats={'CellA'};
-classNames = trainCats;
-numClasses = numel(classNames);
-% Add a background class
-classNames = [classNames {'background'}];
 
 
+load("/home/zcemydo/Scratch/TrainV5/Start50.mat")  
+%load("./Start50.mat")  
 
 
-Datdir="../";
+disp(params); %print parameters
+minibatchSize=8; %set/print minibatch size
 
-ds = fileDatastore([Datdir+"DSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training data
-ds = fileDatastore("../SmallDSFs/", ReadFcn=@(x)cocoAnnotationMATReader(x)); %training data
+numEpoch = 1;
+numIteration = 1;
 
-%valds=fileDatastore([Datdir+"ValDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %validation data
-trainClassNames = ["CellA"];
-imageSize=[520 704 3];
-numClasses = numel(classNames);
-% Add a background class
-classNames = [trainClassNames {'background'}];
-
-
-params = createMaskRCNNConfig(imageSize, numClasses, classNames);
+datdir="/home/zcemydo/Scratch/TrainV2/";
+ds = fileDatastore([datdir+"/DSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+data = preview(trainDS) 
 
 
-
-if canUseGPU
-    executionEnvironment = "gpu";
-else
-    executionEnvironment = "cpu";
-end
-
-initialLearnRate = 0.0005;
-momemtum = 0.9;
-decay = 0.0001;
-velocity = [];
-maxEpochs = 2;
-minibatchSize = 1;
-
-
+% Create the batching function. The images are concatenated along the 4th
+% dimension to get a HxWxCxminiBatchSize shaped batch. The other ground truth data is
+% configured a cell array of length = minibatchSize.
 myMiniBatchFcn = @(img, boxes, labels, masks) deal(cat(4, img{:}), boxes, labels, masks);
-mb = minibatchqueue(ds, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
+
+mb = minibatchqueue(trainDS, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
                             "MiniBatchSize", minibatchSize,...
                             "OutputCast", ["single","","",""],...
                             "OutputAsDlArray", [true, false, false, false],...
@@ -55,23 +33,17 @@ mb = minibatchqueue(ds, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
                             "OutputEnvironment", [executionEnvironment,"cpu","cpu","cpu"]);
 
 
+savefreq= 5; %iterations, move location in for loop to save every X epoch
 
 
 
-%%
-
-numEpoch = 1;
-numIteration = 1; 
-
-
-doTraining=1;
+doTraining=1; %turn off training in script for test purposes
 
 start = tic;
-if doTraining
-    
+
+
+
      % Create subplots for the learning rate and mini-batch loss.
-    fig = figure;
-    [lossPlotter] = helper.configureTrainingProgressPlotter(fig);
     
     % Initialize verbose output
     helper.initializeVerboseOutput([]);
@@ -102,18 +74,16 @@ if doTraining
                 
             % Plot loss/ accuracy metric
              D = duration(0,0,toc(start),'Format','hh:mm:ss');
-            addpoints(lossPlotter,numIteration,double(gather(extractdata(loss))))
-            
-            subplot(2,1,2)
-
-            title("Epoch: " + numEpoch + ", Elapsed: " + string(D))
-           
-            drawnow
             
             numIteration = numIteration + 1;
+            if rem(numIteration, savefreq) == 0
+                    modelDateTime = string(datetime("now",Format="yyyy-MM-dd-HH-mm-ss"));
+                    save("~/Scratch/TrainV5/NetData/Checkpoint-"+modelDateTime+".mat"); %save output with the date and time into the current directotry
+            end
     
+
         end
     numEpoch = numEpoch + 1;
     
     end
-end
+

@@ -2,7 +2,7 @@ clear
 clc
 close all
 
-load("net_checkpoint__200__2024_11_12__23_26_20.mat") %load data from trained network
+load("trainedMaskRCNN-2024-11-12-00-45-27.mat") %load data from trained network
 
 %%
 tiledlayout(2,1, "TileSpacing","tight")
@@ -14,6 +14,7 @@ set(gcf, "color", [1 1 1])
 ValLoss=vertcat(info.ValidationLoss);
 x=[1:numel(ValLoss)]';
 xv=x(~isnan(ValLoss));
+xlim([0 max(x)])
 
 plot( x(~isnan(ValLoss)) , ValLoss( ~isnan(ValLoss) )   , LineWidth=2)
 
@@ -41,5 +42,7 @@ box on
 xlabel('Iteration', Interpreter='latex')
 ylabel('Mask Loss', Interpreter='latex')
 fontname("CMU Serif")
+xlim([0 max(x)])
+
 
 fontsize(16,"points")

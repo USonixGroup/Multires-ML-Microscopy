@@ -14,8 +14,8 @@ valds=fileDatastore([datdir+"/ValDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x))
 
 %%
 
-rand(1863)
-ds=shuffle(ds);
+rng(1863);
+ds=shuffle(ds); %randomize order of the dataset
 
 data = preview(ds)
 
@@ -26,7 +26,7 @@ imageSizeTrain = [520 704 3];
 %net = maskrcnn("resnet50-coco",trainClassNames,InputSize=imageSizeTrain)
 load("MaskRCNNResnet50.mat") %these are created using the createmaskRcnn function and (if using a network other than the default resnet 50) by modifying the matlab source code to customize each branch, see the following for the location in the MATLAB Source code: /Users/yigit/Documents/MATLAB/SupportPackages/R2024b/toolbox/vision/supportpackages/maskrcnn/data
 
-availableGPUs = gpuDeviceCount("available")
+availableGPUs = gpuDeviceCount("available") %start parallel process if GPUs are available
 if availableGPUs>0
   parpool("Processes",availableGPUs)
 end
@@ -38,7 +38,9 @@ schedule = timeBasedDecayLearnRate(0.01)
 
 options = trainingOptions("sgdm", ...
     InitialLearnRate=0.001, ...
-    LearnRateSchedule=schedule, ...
+    LearnRateSchedule="piecewise", ...
+    LearnRateDropPeriod=1, ...
+    LearnRateDropFactor=0.1, ...
     Plot="none", ...
     Momentum=0.9, ...
     MaxEpochs=3, ...
@@ -52,14 +54,17 @@ options = trainingOptions("sgdm", ...
     CheckpointFrequency=40, ...
     CheckpointFrequencyUnit='iteration', ...
     CheckpointPath="/home/zcemydo/Scratch/TrainV4") %training options
+
 %% start training
 
 doTraining = true;
 if doTraining
    % [net,info] = trainMaskRCNN(ds,net,options,FreezeSubNetwork="backbone");
-    [net,info] = trainMaskRCNN(ds,net,options);
+    [net,info] = trainMaskRCNN(ds,net,options, ...
+        NumStrongestRegions=Inf)
+
     modelDateTime = string(datetime("now",Format="yyyy-MM-dd-HH-mm-ss"));
-    save("trainedMaskRCNN-"+modelDateTime+".mat","net", "info");
+    save("trainedMaskRCNN-"+modelDateTime+".mat","net", "info"); %save output with the date and time into the current directotry
 end
 
 
