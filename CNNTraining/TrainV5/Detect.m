@@ -2,6 +2,7 @@ clear
 clc
 close all
 
+addpath("./src")
 
 % Read the image for inference
 %img = imread('visionteam.jpg');
