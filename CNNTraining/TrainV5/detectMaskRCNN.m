@@ -32,7 +32,7 @@ imageSize = size(image);
 %%% Detector prediction
 
 % Outputs for object detection
-featureMapNode = 'res4b22_relu';
+featureMapNode = 'res4b22_relu'; %res4b22_relu activation_40_relu
 outputNodes = {'rpl', 'rcnnSoftmax', 'fcBoxDeltas'};
 outputNodes = [outputNodes featureMapNode];
 
@@ -74,7 +74,7 @@ classNames = removecats(classNames, params.BackgroundClass);
 
 ind = (1:numel(classNames))';
 labels = classNames(repelem(ind,numObservations,1));
-labels = labels';
+labels = labels;
 
 
 % Regression data processing

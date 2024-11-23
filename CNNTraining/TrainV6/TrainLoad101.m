@@ -20,63 +20,40 @@ numClasses = numel(classNames);
 classNames = [classNames {'background'}];
 
 
-% datdir="/home/zcemydo/Scratch/TrainV2/";
-% ds = fileDatastore([datdir+"/DSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+ datdir="/home/zcemydo/Scratch/TrainV2/";
+ ds = fileDatastore([datdir+"/DSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
 
-datdir="..";
-ds = fileDatastore([datdir+"/SmallDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
 
 trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
 
 
 data = preview(trainDS) 
 
-params = createMaskRCNNConfig(imageSize, numClasses, classNames);
-
-
-    params.NumRegionsToSample = 400;
-    params.NumStrongestRegions = 1000;
-
-    params.AnchorBoxes=[
-    32    16
-    64    32
-   8    4
-   20   40
-   30   15
-    32    32
-    64    64
-   20   20
-   40   40
-   60   60
-    16    32
-    32    64
-    64   128
-   15   30
-   20   40]
 
 
 
 
+
+%dlnet = createMaskRCNN(numClasses, params, 'resnet50'); %or resnet 101
+load("/home/zcemydo/Scratch/TrainV6/NET101.mat")
 disp(params);
-
-
-dlnet = createMaskRCNN(numClasses, params, 'resnet101'); %or resnet 101
 
 %set environment
 if canUseGPU
     executionEnvironment = "gpu";
+    gpuDevice(1)
 else
     executionEnvironment = "cpu";
 end
 
 %% learning parameters
-initialLearnRate = 0.0001;
-momemtum = 0.9;
-decay = 0.0001;
-velocity = [];
-maxEpochs = 30;
+initialLearnRate = 0.001
+momemtum = 0.9
+decay = 0.0025
+velocity = []
+maxEpochs = 30
 
-minibatchSize = 8
+minibatchSize = 4
 
 
 % Create the batching function. The images are concatenated along the 4th
@@ -92,8 +69,8 @@ mb = minibatchqueue(trainDS, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
                             "OutputEnvironment", [executionEnvironment,"cpu","cpu","cpu"]);
 
 
-savefreq= 5; %iterations, move location in for loop to save every X epoch
-
+savefreq= 500; %iterations, move location in for loop to save every X epoch
+disp(params)
 
 %% start training loop
 
@@ -140,7 +117,8 @@ if doTraining
             numIteration = numIteration + 1;
             if rem(numIteration, savefreq) == 0
                     modelDateTime = string(datetime("now",Format="yyyy-MM-dd-HH-mm-ss"));
-                    save("~/Scratch/TrainV5/NetData/Checkpoint-"+modelDateTime+".mat"); %save output with the date and time into the current directotry
+                    savenet=gather(dlnet);
+                    save("~/Scratch/TrainV6/NetData101/Checkpoint-"+modelDateTime+".mat", "savenet"); %save output with the date and time into the current directotry
             end
     
 
@@ -150,3 +128,6 @@ if doTraining
     end
 end
 
+dlnet=gather(dlnet);
+modelDateTime = string(datetime("now",Format="yyyy-MM-dd-HH-mm-ss"));
+                    save("~/Scratch/TrainV6/NetData101/FINAL"+modelDateTime+".mat"); %save output with the date and time into the current directotry

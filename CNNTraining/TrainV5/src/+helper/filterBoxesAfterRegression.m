@@ -19,5 +19,5 @@ function [bboxes, scores, labels] = filterBoxesAfterRegression(bboxes, scores, l
 
     bboxes = bboxes(boxOverlapsImage,:);
     scores = scores(boxOverlapsImage,:);
-    labels = labels(boxOverlapsImage,:);            
+    labels = labels(boxOverlapsImage);            
 end
