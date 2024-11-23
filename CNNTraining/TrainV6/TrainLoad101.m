@@ -69,7 +69,7 @@ mb = minibatchqueue(trainDS, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
                             "OutputEnvironment", [executionEnvironment,"cpu","cpu","cpu"]);
 
 
-savefreq= 500; %iterations, move location in for loop to save every X epoch
+savefreq= 400; %iterations, move location in for loop to save every X epoch
 disp(params)
 
 %% start training loop

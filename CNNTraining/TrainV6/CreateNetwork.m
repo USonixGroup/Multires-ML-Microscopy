@@ -25,10 +25,11 @@ classNames = [classNames {'background'}];
 params = createMaskRCNNConfig(imageSize, numClasses, classNames);
 
 
-    params.NumRegionsToSample = 2000;
-    params.NumStrongestRegions = 1000;
-    params.RPNROIPerImage=1000;
-    params.MinSize=[3 3]
+    params.NumRegionsToSample = 10000;
+    params.NumStrongestRegions = 6000;
+    params.RPNROIPerImage=10000;
+    params.MinSize=[3 3] %stands to reason that any smaller box than 3x3 pixels does not contain enough information to segment, can filter to save on computation
+    %could probably be increased even further, but computation is not a limiting factor here
 
     params.AnchorBoxes=[
     16 16
@@ -57,9 +58,9 @@ params = createMaskRCNNConfig(imageSize, numClasses, classNames);
     30 40
     40 10
     40 20
-    40 30 ]
+    40 30 ] %anchor boxes set to reflect cell sizes in cell images, weighted for smaller values
    
-    params.NumAnchors=size(params.AnchorBoxes,1)
+    params.NumAnchors=size(params.AnchorBoxes,1) %number of anchor boxes is the number of rows
 
 disp(params);
 
