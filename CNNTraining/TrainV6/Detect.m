@@ -6,8 +6,10 @@ addpath("src/")
 % Read the image for inference
 img = imread('A172_Phase_C7_1_00d00h00m_1.tif');
 img=repmat(img, [1 1 3]);
-load("RESNET101.mat", "dlnet", "params")
-net=dlnet;
+load("Checkpoint--2024-11-25-20-03-45.mat")
+net=savenet;
+load("NET101.mat", "params")
+maskSubnet = helper.extractMaskNetwork(net);
 
 %%
 % Define the target size of the image for inference
@@ -43,6 +45,8 @@ params.Threshold=0.4;
 
 
 %%
+params.Threshold=0.1;
+
 img = imread('A172_Phase_C7_1_02d12h00m_2.tif');
 img=repmat(img, [1 1 3]);
 
@@ -52,12 +56,14 @@ img=repmat(img, [1 1 3]);
 
 % Overlay the detected masks on the image using the insertObjectMask
 % function.
+
+%%
 if(isempty(masks))
     overlayedImage = img;
 else
-    overlayedImage = insertObjectMask(img, masks);
+    overlayedImage = insertObjectMask(img, masks,Color=lines(size(masks, 3)) );
 end
 figure, imshow(overlayedImage)
 
 % Show the bounding boxes and labels on the objects
-showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')

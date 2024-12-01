@@ -1,6 +1,7 @@
 clear
 clc
 close all
+
 %load and read data and appropriate columns
 A=readstruct("livecell_coco_train.json"); %file containing json data
  bboxDat=vertcat(A.annotations.bbox);
@@ -52,11 +53,12 @@ for i=[1:length(counts)] %for the number of images
             polygon=cell2mat(PolyData(imagelocs(i)+j,1));
             masks(:,:,j)=poly2mask( polygon(1,1:2:end), polygon(1,2:2:end),h, w); %turn polygon data into binary masks
         end
-        label(1:counts(i),1 )="CellA"; %all cells are annotated as CellA at the moment
+
+        label(1:counts(i),1 )=categorical(cellstr(repmat((FileNamesIDS{i, 2}), [counts(i) 1]))); %write cell type from file name        %label(1:counts(i),1 )="CellA"; %all cells are annotated as CellA at the moment
         label=categorical(label);
         %imshow(denseMasks(:,:,2))
 
-        save(["DSFs/label_"+FileNamesIDS{i, 2}+".mat"], "im", "bbox","label", "masks") %write data for current image to a .mat file
+        save(["CatDSFs/label_"+FileNamesIDS{i, 2}+".mat"], "im", "bbox","label", "masks") %write data for current image to a .mat file
         clear bbox polygon masks label j %clear data so now ones can be written
 
         disp(["Image: "+i+" Percent: "+i/length(imagelocs)*100+"%"]) %print progress

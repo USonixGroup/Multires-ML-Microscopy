@@ -20,7 +20,7 @@ ds=shuffle(ds); %randomize order of the dataset
 data = preview(ds)
 
 trainClassNames = ["CellA"];
-imageSizeTrain = [520 704 3];
+imageSizeTrain = [520 704 4];
 
 %%
 %net = maskrcnn("resnet50-coco",trainClassNames,InputSize=imageSizeTrain)
