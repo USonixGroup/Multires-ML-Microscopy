@@ -1,3 +1,4 @@
+
 clear
 clc
 close all
@@ -9,20 +10,20 @@ addpath('./src');
 
 
 %trainClassNames = ["CellA"];
-imageSize=[520 704 3];
-
-load("NNET101.mat")
-
-
+load("/home/zcemydo/Scratch/TrainV7/NNET101.mat")
 
 %%
- datdir="..";
- ds = fileDatastore([datdir+"/CatDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+imageSize=[520 704 3];
 
 
-%trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+datdir="/home/zcemydo/Scratch/";
 
-trainDS=ds.shuffle;
+ds = fileDatastore([datdir+"/CatDSFs/"], ReadFcn=@(x)cocoAnnotationMATReader(x), FileExtensions=".mat")
+
+
+trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+
+trainDS=trainDS.shuffle;
 
 data = preview(trainDS) 
 
@@ -43,13 +44,13 @@ else
 end
 
 %% learning parameters
-initialLearnRate = 0.001
+initialLearnRate = 0.002
 momemtum = 0.9
-decay = 0.0025
+decay = 0.003
 velocity = []
 maxEpochs = 30
 
-minibatchSize = 1
+minibatchSize = 4
 
 
 % Create the batching function. The images are concatenated along the 4th
@@ -65,13 +66,14 @@ mb = minibatchqueue(trainDS, 4, "MiniBatchFormat", ["SSCB", "", "", ""],...
                             "OutputEnvironment", [executionEnvironment,"cpu","cpu","cpu"]);
 
 
-savefreq= 400; %iterations, move location in for loop to save every X epoch
+savefreq= 500; %iterations, move location in for loop to save every X epoch
 disp(params)
 
 %% start training loop
 
 numEpoch = 1;
 numIteration = 1;
+
 
 start = tic;
 doTraining=1; %turn off training in script for test purposes
@@ -114,7 +116,7 @@ if doTraining
             if rem(numIteration, savefreq) == 0
                     modelDateTime = string(datetime("now",Format="yyyy-MM-dd-HH-mm-ss"));
                     savenet=gather(dlnet);
-                    save("~/Scratch/TrainV6/NetData101/Checkpoint-"+modelDateTime+".mat", "savenet"); %save output with the date and time into the current directotry
+                    save("~/Scratch/TrainV7/NetData101/Checkpoint--"+modelDateTime+".mat", "savenet"); %save output with the date and time into the current directotry
             end
     
 
@@ -126,4 +128,4 @@ end
 
 dlnet=gather(dlnet);
 modelDateTime = string(datetime("now",Format="yyyy-MM-dd-HH-mm-ss"));
-                    save("~/Scratch/TrainV6/NetData101/FINAL"+modelDateTime+".mat"); %save output with the date and time into the current directotry
+                    save("~/Scratch/TrainV7/NetData101/FINAL"+modelDateTime+".mat"); %save output with the date and time into the current directotry
