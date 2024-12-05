@@ -75,7 +75,7 @@ function [approx_coeff, vert_coeff, horiz_coeff, diag_coeff] = coefficients(inpu
 
     % Initialisation of parameters
     wavelet = 'db5'; % Wavelet function
-    n = 3; % Levels of decomposition
+    n = 2; % Levels of decomposition
     
     % Perform wavelet decomposition up to the specified level
     [C, S] = wavedec2(input_image, n, wavelet);
