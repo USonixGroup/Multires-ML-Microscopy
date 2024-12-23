@@ -82,6 +82,6 @@ output_x_pixel=size(resized,2);
 output_y_pixel=size(resized,1);
 
 else
-disp("error")
+disp("errorrrr")
 
 end
