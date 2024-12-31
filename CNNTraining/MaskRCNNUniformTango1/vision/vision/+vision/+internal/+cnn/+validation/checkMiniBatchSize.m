@@ -1,0 +1,9 @@
+function checkMiniBatchSize(sz, callername)
+%#codegen
+
+%   Copyright 2017-2020 The MathWorks, Inc.
+
+validateattributes(sz,...
+    {'numeric'}, ...
+    {'scalar', 'real', 'positive', 'integer', 'nonempty', 'finite', 'nonsparse'}, ...
+    callername, 'MiniBatchSize');
