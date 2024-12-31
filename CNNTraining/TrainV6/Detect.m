@@ -48,7 +48,7 @@ params.Threshold=0.4;
 params.Threshold=0.1;
 
 img = imread('A172_Phase_C7_1_02d12h00m_2.tif');
-img=repmat(img, [1 1 3]);
+img=repmat(img, [1 1 1]);
 
 [boxes, scores, labels, masks] = detectMaskRCNN(net, maskSubnet, img, params, "cpu");
 
@@ -66,4 +66,4 @@ end
 figure, imshow(overlayedImage)
 
 % Show the bounding boxes and labels on the objects
-%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')

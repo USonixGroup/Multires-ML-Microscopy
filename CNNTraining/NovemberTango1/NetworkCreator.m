@@ -4,7 +4,7 @@ close all
 
 addpath("src/")
 
-imageSize = [520 704 3];
+imageSize = [520/2 704/2 3];
 % ds = fileDatastore(unpackAnnotationFolder, 'ReadFcn',@(x)cocoAnnotationMATReader(x, trainImgFolder));
 % trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
 % trainDS.shuffle();
@@ -27,21 +27,21 @@ params.AnchorBoxes = [[32 16];
                       [64 32];
                       [128 64];
                       [256 128];
-                      [512 256];
                       [32 32];
                       [64 64];
                       [128 128];
                       [256 256];
-                      [512 512];
                       [16 32];
                       [32 64];
                       [64 128];
                       [128 256];
-                      [256 512]
-                      [16 16]
-                      [8 8]
-                      [8 16]
-                      [16 8]];
+                      [16 16];
+                      [8 8];
+                      [8 16];
+                      [16 8]
+                      [4 4];
+                      [4 8];
+                      [8 4];];
 
 params.NumAnchors = size(params.AnchorBoxes,1);
 params.NumRegionsToSample = 1000;
@@ -54,4 +54,4 @@ disp(params);
 
 dlnet = createMaskRCNN(numClasses, params, 'resnet101');
 
-params.ImageSize=[520 704 1];
+imageSize = [520/2 704/2 4];

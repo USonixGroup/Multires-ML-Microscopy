@@ -6,7 +6,7 @@ function [bboxes, scores, labels] = filterBoxesAfterRegression(bboxes, scores, l
     % Copyright 2020 The MathWorks, Inc.
 
     [bboxes, scores, labels] = fastRCNNObjectDetector.removeInvalidBoxesAndScores(bboxes, scores, labels);
-
+    labels=labels';
     % Remove boxes that are completely outside the image.
     x1 = bboxes(:,1);
     y1 = bboxes(:,2);
