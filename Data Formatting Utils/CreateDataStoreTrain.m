@@ -37,6 +37,8 @@ c=unique(ImageIDS(:,1));
 imagelocs=[0; cumsum(counts)]; %starting position offset for each image in the list of data 
 
 %%
+        alllabels=[]
+
 
 for i=[1:length(counts)] %for the number of images
 
@@ -54,9 +56,12 @@ for i=[1:length(counts)] %for the number of images
             masks(:,:,j)=poly2mask( polygon(1,1:2:end), polygon(1,2:2:end),h, w); %turn polygon data into binary masks
         end
 
-        label(1:counts(i),1 )=categorical(cellstr(repmat((FileNamesIDS{i, 2}), [counts(i) 1]))); %write cell type from file name        %label(1:counts(i),1 )="CellA"; %all cells are annotated as CellA at the moment
+        label(1:counts(i),1 )=categorical(cellstr(repmat( extractBefore( FileNamesIDS{i, 2}, "_" ) , [counts(i) 1]))); %write cell type from file name        %label(1:counts(i),1 )="CellA"; %all cells are annotated as CellA at the moment
         label=categorical(label);
         %imshow(denseMasks(:,:,2))
+        alllabels=[label; alllabels];
+        alllabels=unique(alllabels);
+
 
         save(["CatDSFs/label_"+FileNamesIDS{i, 2}+".mat"], "im", "bbox","label", "masks") %write data for current image to a .mat file
         clear bbox polygon masks label j %clear data so now ones can be written
@@ -64,7 +69,6 @@ for i=[1:length(counts)] %for the number of images
         disp(["Image: "+i+" Percent: "+i/length(imagelocs)*100+"%"]) %print progress
 
 end
-
 
 
 

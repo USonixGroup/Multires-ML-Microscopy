@@ -11,21 +11,18 @@ addpath('./src');
 %trainClassNames = ["CellA"];
 imageSize=[520 704 3];
 
-trainCats = {'CellA'};
+load("NNET101.mat")
 
 
-classNames = trainCats;
-numClasses = numel(classNames);
-% Add a background class
-classNames = [classNames {'background'}];
+
+%%
+ datdir="..";
+ ds = fileDatastore([datdir+"/CatDSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
 
 
- datdir="/home/zcemydo/Scratch/TrainV2/";
- ds = fileDatastore([datdir+"/DSFs"], ReadFcn=@(x)cocoAnnotationMATReader(x)); %training datatrainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
+%trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
 
-
-trainDS = transform(ds, @(x)helper.preprocessData(x, imageSize));
-
+trainDS=ds.shuffle;
 
 data = preview(trainDS) 
 
@@ -35,7 +32,6 @@ data = preview(trainDS)
 
 
 %dlnet = createMaskRCNN(numClasses, params, 'resnet50'); %or resnet 101
-load("/home/zcemydo/Scratch/TrainV6/NET101.mat")
 disp(params);
 
 %set environment
@@ -53,7 +49,7 @@ decay = 0.0025
 velocity = []
 maxEpochs = 30
 
-minibatchSize = 4
+minibatchSize = 1
 
 
 % Create the batching function. The images are concatenated along the 4th

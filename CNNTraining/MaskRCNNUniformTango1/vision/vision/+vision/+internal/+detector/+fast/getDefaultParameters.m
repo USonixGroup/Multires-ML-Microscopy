@@ -1,0 +1,11 @@
+function defaults = getDefaultParameters(imageSize)
+%
+
+%   Copyright 2014-2020 The MathWorks, Inc.
+
+%#codegen
+
+defaults = struct(...
+    'MinQuality', 0.1, ...
+    'MinContrast', 0.2, ...
+    'ROI', int32([1 1 imageSize(2) imageSize(1)])); % [1 1 size(I,2) size(I,1)]

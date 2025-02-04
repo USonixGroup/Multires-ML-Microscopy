@@ -1,0 +1,10 @@
+[
+    {
+        "id": "computerVisionToolbox",
+        "label": "Computer Vision Toolbox",
+        "source": "ComputerVisionToolboxPreferences",
+        "codeType": "MATLAB",
+        "l10nPath": "vision:preferencesCVT",
+        "help": "vision,vision,visionprefpanel"
+    }
+]

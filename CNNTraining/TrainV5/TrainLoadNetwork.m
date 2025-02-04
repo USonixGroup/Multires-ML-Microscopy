@@ -42,7 +42,7 @@ disp(params);
 
 
 %dlnet = createMaskRCNN(numClasses, params, 'resnet50'); %or resnet 101
-load("50NET")
+load("101NET")
 
 %set environment
 if canUseGPU
@@ -58,7 +58,7 @@ decay = 0.0001;
 velocity = [];
 maxEpochs = 30;
 
-minibatchSize = 8
+minibatchSize = 1
 
 
 % Create the batching function. The images are concatenated along the 4th
