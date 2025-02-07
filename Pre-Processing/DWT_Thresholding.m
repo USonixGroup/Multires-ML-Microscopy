@@ -6,29 +6,28 @@ function thresh_reconstructed_img = coefficients(img)
 
     % Initialise Parameters
     wavelet = 'db5';
-    n = 4;
-    t = 0.5; % Threshold (decimal)
+    n = 4; % Bug means current max n = 6
+    t = 0.2; % Threshold (decimal)
     
-    %% Discrete Wavelet Transform
-    % Extract detail and approximation coefficients for first decomposition
-    % level
-    [cA, cH1, cV1, cD1] = dwt2(img, wavelet);
-
+    %% Discrete Wavelet Transform    
     % Loops through each decomposition level calculating coefficients from
     % previous level approximation coefficients
-    for level = 2:n
-        [cA, cH, cV, cD] = dwt2(cA, wavelet);
-        
+    for level = 1:n
+        if level == 1
+            [cA, cH, cV, cD] = dwt2(img, wavelet);
+        else
+            [cA, cH, cV, cD] = dwt2(cA, wavelet);
+        end
+
         % Calculating thresholding parameters
-        cA_max = t * max(abs([cA(:)]));
         cH_max = t * max(abs([cH(:)]));
         cV_max = t * max(abs([cV(:)]));
         cD_max = t * max(abs([cD(:)]));
 
-        coeffs{level, 1} = wthresh(cA, 's',cA_max);
-        coeffs{level, 2} = wthresh(cH, 's',cH_max);
-        coeffs{level, 3} = wthresh(cV, 's',cV_max);
-        coeffs{level, 4} = wthresh(cD, 's',cD_max);
+        coeffs{level, 1} = cA;
+        coeffs{level, 2} = wthresh(cH,'s',cH_max);
+        coeffs{level, 3} = wthresh(cV,'s',cV_max);
+        coeffs{level, 4} = wthresh(cD,'s',cD_max);
 
     end
     
@@ -45,7 +44,7 @@ function thresh_reconstructed_img = coefficients(img)
         cD = coeffs{level, 4};
         cA_rec = idwt2(cA_rec, cH, cV, cD, wavelet);
         
-        % Resolving issue with extra column
+        % Bug fix - resolving issue with extra column
         if size(cA_rec,2) == 96
             cA_rec(:,96) = [];
         end
@@ -55,15 +54,21 @@ function thresh_reconstructed_img = coefficients(img)
 
     % Reconstruct the image using the thresholded coefficients (level 1
     % decomposition coefficients)
-    thresh_reconstructed_img = idwt2(coeffs{1, 1}, cH1, cV1, cD1, wavelet);
+    cA = coeffs{1, 1};
+    cH = coeffs{1, 2};
+    cV = coeffs{1, 3};
+    cD = coeffs{1, 4};
+    thresh_reconstructed_img = idwt2(cA, cH, cV, cD, wavelet);
 
     % Display the original and reconstructed images
     figure;
     subplot(1,2,1);
-    imshow(img, []); title('Original Image');
+    imshow(img, []);
+    title('Original Image');
 
     subplot(1,2,2);
-    imshow(thresh_reconstructed_img, []); title('Thresholded Reconstructed Image');
+    imshow(thresh_reconstructed_img, []);
+    title('Thresholded Reconstructed Image');
     
 end
 
