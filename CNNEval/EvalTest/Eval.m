@@ -3,9 +3,9 @@ clc
 close all
 
 %% run image segmentation
-load("RESNET101_net_checkpoint__800__2024_11_13__11_27_26.mat")
-dsTest= imageDatastore("TestIms/")
-dsResults= segmentObjects(net, dsTest, "Threshold",0.5)
+%load("RESNET101_net_checkpoint__800__2024_11_13__11_27_26.mat")
+dsTest= fileDatastore("SmallTestDSFs/", ReadFcn=@(x)TestIMsMATReader(x));
+dsResults= segmentObjects(net, dsTest, "Threshold",0.9)
 
 %% evaluate
 clc
@@ -71,5 +71,3 @@ function iou = calculateIoU(mask1, mask2)
     iou = intersection / union;
 end
 
-%%
-mean(cell2mat(metrics.ImageMetrics.AP))
