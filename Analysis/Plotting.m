@@ -23,10 +23,10 @@ for i = 1:8
     scatter(time(idx), avgArea(idx), 50, colors(i, :), 'filled', 'DisplayName', cellNames{i});
 end
 
-xlabel('Time', 'FontSize', 12, 'FontName', 'Times New Roman');
-ylabel('Average Cell Area', 'FontSize', 12, 'FontName', 'Times New Roman');
-title('Scatter Plot of Average Area vs. Time', 'FontSize', 14, 'FontName', 'Times New Roman');
-legend('Location', 'best', 'FontSize', 12, 'FontName', 'Times New Roman');
+xlabel('Time', 'FontSize', 14, 'FontName', 'Times New Roman');
+ylabel('Average Cell Area', 'FontSize', 14, 'FontName', 'Times New Roman');
+title('Scatter Plot of Average Area vs Time', 'FontSize', 14, 'FontName', 'Times New Roman');
+legend('Location', 'best', 'FontSize', 14, 'FontName', 'Times New Roman');
 grid on;
 hold off;
 
@@ -39,13 +39,29 @@ for i = 1:8
     scatter(time(idx), numCells(idx), 50, colors(i, :), 'filled', 'DisplayName', cellNames{i});
 end
 
-xlabel('Time', 'FontSize', 12, 'FontName', 'Times New Roman');
-ylabel('Number of Cells', 'FontSize', 12, 'FontName', 'Times New Roman');
-title('Scatter Plot of Number of Cells vs. Time', 'FontSize', 14, 'FontName', 'Times New Roman');
-legend('Location', 'best', 'FontSize', 12, 'FontName', 'Times New Roman');
+xlabel('Time', 'FontSize', 14, 'FontName', 'Times New Roman');
+ylabel('Number of Cells', 'FontSize', 14, 'FontName', 'Times New Roman');
+title('Scatter Plot of Number of Cells vs Time', 'FontSize', 14, 'FontName', 'Times New Roman');
+legend('Location', 'best', 'FontSize', 14, 'FontName', 'Times New Roman');
 grid on;
 hold off;
 
+
+
+figure (3); 
+hold on;
+
+for i = 1:8
+    idx = (cellTypeIDs == i); % logical array takes only cell types = i for plotting
+    scatter(time(idx), avgPer(idx), 50, colors(i, :), 'filled', 'DisplayName', cellNames{i});
+end
+
+xlabel('Time', 'FontSize', 14, 'FontName', 'Times New Roman');
+ylabel('Average Cell Perimeter', 'FontSize', 14, 'FontName', 'Times New Roman');
+title('Scatter Plot of Average Perimeter vs Time', 'FontSize', 14, 'FontName', 'Times New Roman');
+legend('Location', 'best', 'FontSize', 14, 'FontName', 'Times New Roman');
+grid on;
+hold off;
 
 % % Get unique Cell Type IDs and their corresponding total counts
 % uniqueTypes = unique(cellTypeIDs); % Find unique cell types
