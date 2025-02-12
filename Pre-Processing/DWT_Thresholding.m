@@ -22,7 +22,8 @@ im=imread(imagePath);
 img = mean(im,3);
 img = rescale(img);
 
-% Initialise Parameters
+% Initialise Parameters (optional, if not specified then remove from
+% function call)
 wavelet = 'db5';
 n = 4; % Bug means current max n = 6
 threshold_in = [0.1 0.2 0.3 0.4]; % Threshold (decimal). Alternatively, threshold_in could be a single scalar value.
