@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 function thresh_reconstructed_img = DWT_Denoise(img, Options)
     % Default argument values specified
     arguments
@@ -13,7 +12,7 @@ function thresh_reconstructed_img = DWT_Denoise(img, Options)
         threshold = ones(1, Options.Level) * Options.Threshold;
     else
         threshold = Options.Threshold;
-=======
+
 function thresh_reconstructed_img = Coefficients(img, wavelet, n, threshold_in)
     % OPTIONAL arguments:
     % Positional arguments means arguments position must be filled in
@@ -32,43 +31,42 @@ function thresh_reconstructed_img = Coefficients(img, wavelet, n, threshold_in)
         threshold = ones(1, n) * threshold_in;
     else
         threshold = threshold_in;
->>>>>>> a566b155dc7df94dc50579a7e6ed1c8926b4bec3
+
     end
     
     
     % If input is a scalar value then create an array
-<<<<<<< HEAD
     if isscalar(Options.Threshold)
         threshold = ones(1, Options.Level) * Options.Threshold;
     else
         % If input is already an array
         threshold = Options.Threshold;
-=======
+    end
+
     if isscalar(threshold_in)
         threshold = ones(1, n) * threshold_in;
     else
         % If input is already an array
         threshold = threshold_in;
->>>>>>> a566b155dc7df94dc50579a7e6ed1c8926b4bec3
+
     end
 
     %% Discrete Wavelet Transform    
     % Loops through each decomposition level calculating coefficients from
     % previous level approximation coefficients
-<<<<<<< HEAD
     for level = 1:Options.Level
         if level == 1
             [cA, cH, cV, cD] = dwt2(img, Options.Wavelet);
         else
             [cA, cH, cV, cD] = dwt2(cA, Options.Wavelet);
-=======
+    
     for level = 1:n
         if level == 1
             [cA, cH, cV, cD] = dwt2(img, wavelet);
         else
             [cA, cH, cV, cD] = dwt2(cA, wavelet);
->>>>>>> a566b155dc7df94dc50579a7e6ed1c8926b4bec3
-        end
+
+    end
         
         % Dynamic threshold which can be different for each decomposition level 
         t = threshold(level);
@@ -87,22 +85,19 @@ function thresh_reconstructed_img = Coefficients(img, wavelet, n, threshold_in)
     
     %% Reconstruction
     % Obtaining highest decomposition level approximation coefficients
-<<<<<<< HEAD
     cA_rec = coeffs{Options.Level, 1};
-=======
+
     cA_rec = coeffs{n, 1};
->>>>>>> a566b155dc7df94dc50579a7e6ed1c8926b4bec3
 
     % Loops through each decomposition level (highest level of 
     % decomposition to lowest) and calculates the reconstructed
     % approximation coefficients for the next level
-<<<<<<< HEAD
     for level = Options.Level:-1:2
         cH = coeffs{level, 2};
         cV = coeffs{level, 3};
         cD = coeffs{level, 4};
         cA_rec = idwt2(cA_rec, cH, cV, cD, Options.Wavelet);
-=======
+
     for level = n:-1:2
         cH = coeffs{level, 2};
         cV = coeffs{level, 3};
@@ -128,12 +123,12 @@ function thresh_reconstructed_img = Coefficients(img, wavelet, n, threshold_in)
     cH = coeffs{1, 2};
     cV = coeffs{1, 3};
     cD = coeffs{1, 4};
-<<<<<<< HEAD
-    thresh_reconstructed_img = idwt2(cA, cH, cV, cD, Options.Wavelet);
-=======
-    thresh_reconstructed_img = idwt2(cA, cH, cV, cD, wavelet);
->>>>>>> a566b155dc7df94dc50579a7e6ed1c8926b4bec3
 
+    thresh_reconstructed_img = idwt2(cA, cH, cV, cD, Options.Wavelet);
+
+    thresh_reconstructed_img = idwt2(cA, cH, cV, cD, wavelet);
+
+    
     % Display the original and reconstructed images
     figure;
     subplot(1,2,1);
