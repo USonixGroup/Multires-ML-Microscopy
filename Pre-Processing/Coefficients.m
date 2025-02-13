@@ -63,13 +63,18 @@ function thresh_reconstructed_img = Coefficients(img, wavelet, n, threshold_in)
         cH = coeffs{level, 2};
         cV = coeffs{level, 3};
         cD = coeffs{level, 4};
-        cA_rec = idwt2(cA_rec, cH, cV, cD, wavelet);
         
-        % Bug fix - resolving issue with extra column
-        if size(cA_rec,2) == 96
-            cA_rec(:,96) = [];
+        % Ensuring cA and cD have the same number of columns
+        cA_cols = size(cA_rec,2);
+        cD_cols = size(cH,2);
+
+        if cA_cols ~= cD_cols
+            cA_rec(:,cA_cols) = [];
         end
         
+        % Inverse DWT to reconstruct cA
+        cA_rec = idwt2(cA_rec, cH, cV, cD, wavelet);
+
         coeffs{level-1, 1} = cA_rec;
     end
 

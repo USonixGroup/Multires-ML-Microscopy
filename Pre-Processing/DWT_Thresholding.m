@@ -26,7 +26,7 @@ img = rescale(img);
 % function call)
 wavelet = 'db5';
 n = 4; % Bug means current max n = 6
-threshold_in = [0.1 0.2 0.3 0.4]; % Threshold (decimal). Alternatively, threshold_in could be a single scalar value.
+threshold_in = [0.2 0.2 0.25 0.25]; % Threshold (decimal). Alternatively, threshold_in could be a single scalar value.
 
 % Applies the DWT thresholding function and returns the denoised image
 denoised_img = Coefficients(img, wavelet, n, threshold_in);
