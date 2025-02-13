@@ -58,7 +58,7 @@ for i=[1:length(counts)] %for the number of images
         label=categorical(label);
         %imshow(denseMasks(:,:,2))
 
-        save(["TestDSFs/label_"+FileNamesIDS{i, 2}+".mat"], "masks", "label") %write data for current image to a .mat file
+        save(["TestDSFs/label_"+FileNamesIDS{i, 2}+".mat"], "im", "masks", "label") %write data for current image to a .mat file
         clear bbox polygon masks label j %clear data so now ones can be written
 
         disp(["Image: "+i+" Percent: "+i/length(imagelocs)*100+"%"]) %print progress

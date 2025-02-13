@@ -7,17 +7,17 @@ addpath("./MRCNNsrc") %when running on Myriad, needed to load the vision
 %toolbox
 
 %%
-ds = fileDatastore("./SingleDS/", ReadFcn=@(x)MATReaderDWT(x, 1)); %training data
+ds = fileDatastore("./SingleDS/", ReadFcn=@(x)MATReader1C(x, 1)); %training data
 data = preview(ds)
 
 
 %%
 trainClassNames = ["CellA"];
-imageSizeTrain = [528/2 704/2 4];
+imageSizeTrain = [528 704 1];
 
 ABs = [20 20; 20 40; 40 20]*2;
 ABs = [ABs; ABs*2; ABs*4; ABs*8; ABs*16]/2;
-NetDataDir = "./NetDataRes50";
+NetDataDir = "./NetDataResNext101";
  
 net = MRCNN(trainClassNames,ABs, NetDataDir,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16)
 
@@ -28,6 +28,7 @@ options = trainingOptions("adam", ...
     LearnRateSchedule="piecewise", ...
     LearnRateDropPeriod=100, ...
     LearnRateDropFactor=0.1, ...
+    ValidationPatience=6,
     Plot="none", ...  
     MaxEpochs=15, ...
     MiniBatchSize=1, ...
@@ -54,14 +55,14 @@ im=repmat(im ,[1 1 1]);
 %%
 im=rand([520 704]);
 %%
-
+tic
 % %% utility to use model to te
 % st certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
 %net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.1,NumStrongestRegions=Inf, SelectStrongest=true, MinSize=[3 3],MaxSize=[80 80]);
-% 
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.01,NumStrongestRegions=Inf, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
+%  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
 
@@ -74,8 +75,8 @@ end
 figure, imshow(overlayedImage)
 
 % Show the bounding boxes and labels on the objects
-showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
-
+%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+toc
 
 %%
 X=dlarray(single(im), 'SSCB');
