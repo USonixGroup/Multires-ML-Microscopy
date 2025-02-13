@@ -54,7 +54,12 @@ options = trainingOptions("adam", ...
 [net,info1] = trainMRCNN(ds,net,options, NumStrongestRegions=inf, NumRegionsToSample=256, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
 save("Res101-Warmup.mat");
 
-
+if canUseGPU
+    executionEnvironment = "gpu";
+    gpuDevice(1)
+else
+    executionEnvironment = "cpu";
+end
 %% phase 2, focus on region proposal network
 options = trainingOptions("adam", ...
     InitialLearnRate=1e-4, ...
@@ -77,7 +82,12 @@ options = trainingOptions("adam", ...
 [net,info2] = trainMRCNN(ds,net,options,"FreezeSubNetwork","backbone", NumStrongestRegions=inf, NumRegionsToSample=256, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
 save("Res101-RPNFOCUS.mat");
 
-
+if canUseGPU
+    executionEnvironment = "gpu";
+    gpuDevice(1)
+else
+    executionEnvironment = "cpu";
+end
 %% phase 3, train everything
 options = trainingOptions("adam", ...
     InitialLearnRate=1e-3, ...

@@ -1,6 +1,6 @@
 function [im, masks, labels, bbox] = augmentImage(im, masks, labels, bbox)
 
-randNums = rand([1 8],"single"); %generate random numbers for augmentation, more efficient to do so in one step
+randNums = rand([1 5],"single"); %generate random numbers for augmentation, more efficient to do so in one step
 
 if randNums(1)<0.2 %horizontal flip with 20% probability
     im = im(end:-1:1, :);
@@ -25,9 +25,9 @@ if randNums(3)>0.95 %artificially decrease contrast (inverse of previous functio
 end
 
 % crop to smaller sizes randomly, change masks and labels to remove empty elements
-if randNums(6)<0.025
-    [im, masks, labels, bbox] = CropRandom(im, masks, labels, bbox, [264, 352]);
-end
+% if randNums(6)<0.025
+%     [im, masks, labels, bbox] = CropRandom(im, masks, labels, bbox, [264, 352]);
+% end
 
 if randNums(4)<0.25 %add Gaussian white noise with 40% probability
     im = imnoise(im, "gaussian", 0, 0.0025*randNums(5)); %mean 0, variance chosen randomly
