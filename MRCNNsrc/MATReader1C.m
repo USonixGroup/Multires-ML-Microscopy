@@ -2,7 +2,7 @@ function  out = MATReader1C(filename, augmentOnOff)
 
 load(filename);
 
-im=single(rescale(im));
+im=rescale(im);
 
 [im, masks] = resizeImageandMask(im, masks, [528, 704]);
 
