@@ -3,11 +3,7 @@ clc
 close all
 
 %%
-addpath("./MRCNNsrc") %when running on Myriad, needed to load the vision
-%toolbox
-
-%%
-ds = fileDatastore("./SingleDS/", ReadFcn=@(x)MATReader1C(x, 1)); %training data
+ds = fileDatastore("./SingleDS/", ReadFcn=@(x)MATReader1C(x, 0)); %training data
 data = preview(ds)
 
 
@@ -16,21 +12,21 @@ trainClassNames = ["CellA"];
 imageSizeTrain = [528 704 1];
 
 ABs = [20 20; 20 40; 40 20]*2;
-ABs = [ABs; ABs*2; ABs*4; ABs*8; ABs*16]/2;
-NetDataDir = "./NetDataResNext101";
+ABs = [ABs; ABs*2; ABs*4; ABs*8];
+NetDataDir = "./NetDataRes101";
  
 net = MRCNN(trainClassNames,ABs, NetDataDir,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16)
 
 
 %%
 options = trainingOptions("adam", ...
-    InitialLearnRate=0.00025, ...
+    InitialLearnRate=0.001, ...
     LearnRateSchedule="piecewise", ...
     LearnRateDropPeriod=100, ...
     LearnRateDropFactor=0.1, ...
-    ValidationPatience=6,
+    ValidationPatience=6, ...
     Plot="none", ...  
-    MaxEpochs=15, ...
+    MaxEpochs=12, ...
     MiniBatchSize=1, ...
     BatchNormalizationStatistics="moving", ...
     ResetInputNormalization=false, ...
@@ -44,7 +40,7 @@ options = trainingOptions("adam", ...
 %%
  
 
-[net,info] = trainMRCNN(ds,net,options, NumStrongestRegions=inf, NumRegionsToSample=256, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true) 
+[net,info] = trainMRCNN(ds,net,options, NumStrongestRegions=1000, NumRegionsToSample=100, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=false, FreezeSubNetwork="Backbone") 
 
 
 %%
@@ -60,8 +56,8 @@ tic
 % st certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
-%net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.01,NumStrongestRegions=Inf, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
+net.ProposalsOutsideImage='clip';
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.1,NumStrongestRegions=100, SelectStrongest=true, MinSize=[2 2],MaxSize=[80 80]);
 %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))

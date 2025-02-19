@@ -2,10 +2,9 @@ clear
 clc
 close all
 
-[net net4 net5] = SEResNeXt101Backbone2([504 720, 1], 32, 8);
+addpath("/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github/CNNTraining/SE-ResNeXt_Test")
+[net net4 net5] = SEResNeXt101Backbone2([504 720, 1], 16, 8);
 
-
-%%
 
 net4 = replaceLayer(net4,'stage4_block23_relu_final', reluLayer("Name",'feature_out'));
 
@@ -22,4 +21,11 @@ net5 = replaceLayer(net5, 'stage5_block1_conv1', s5l1);
 net5 = replaceLayer(net5, 'stage5_block1_shortcut', s5l2);
 net5 = removeLayers(net5, 'stage5_input');
 
+
+%% save to file location to change next construction
+dlnetFeature = net4;
+dlnetPostFeature = net5;
+clear net net4 net5 s5l1 s5l2 ans
+save("/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github/CNNTraining/BossaNova/NetDataResNext101/dlnetFeature.mat","dlnetFeature")
+save("/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github/CNNTraining/BossaNova/NetDataResNext101/dlnetPostFeature.mat","dlnetPostFeature")
 

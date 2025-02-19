@@ -1,5 +1,5 @@
 function im = DWT_Denoise(im, Options)
-    % Default argument values specified
+% DWT_DENOISE De-noises image via DWT-thresholding on multiple levels of decomposition
     arguments
         im
         Options.Wavelet char = 'db5' % default value
