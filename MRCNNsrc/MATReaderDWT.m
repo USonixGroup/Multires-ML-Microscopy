@@ -1,4 +1,4 @@
-function  out = MATReader1C(filename, augmentOnOff)
+function  out = MATReaderDWT(filename)
 
 load(filename);
 
@@ -6,10 +6,10 @@ im=single(rescale(im));
 
 [im, masks] = resizeImageandMask(im, masks, [528, 704]);
 
-
-if augmentOnOff==1
-    [im, masks, label, bbox] = augmentImage(im, masks, label, bbox); %random augmentation function
-end
+% 
+% if augmentOnOff==1
+%     [im, masks, label, bbox] = augmentImage(im, masks, label, bbox); %random augmentation function
+% end
 
 
 [cA,cH,cV,cD] = dwt2(im,'sym4','mode','per');

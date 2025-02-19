@@ -142,7 +142,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             arguments
                 classNames {validateClassNames, mustBeUniqueNames} = ''
                 anchorBoxes (:,2){mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = []
-                NetDataDir {mustBeTextScalar}= "./NetDataRes50"
+                NetDataDir {mustBeTextScalar}= "./NetDataRes101";
                 options.InputSize {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = []
                 options.PoolSize (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = [14 14]
                 options.MaskPoolSize (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = [14 14]
