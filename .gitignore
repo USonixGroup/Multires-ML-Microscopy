@@ -12,3 +12,4 @@
 *.DS_Store
 *.onnx
 *.zip
+*.asv
