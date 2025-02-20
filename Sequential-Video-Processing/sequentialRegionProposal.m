@@ -1,8 +1,17 @@
-function proposals = sequentialRegionProposal(obj, regressionBatch, scoresBatch, KnownBBoxes)
-% regionProposal Region proposal functional layer for Mask-RCNN network.
+function proposals = sequentialRegionProposal(obj, regressionBatch, scoresBatch, knownbboxes, numAdditionalProposals)
+    arguments
+        obj
+        regressionBatch dlarray
+        scoresBatch dlarray
+        knownbboxes (:, 4) = []
+        numAdditionalProposals (1,1) {mustBeInteger, mustBePositive} = 100
+    end
+% sequentialRegionProposal Region proposal functional layer reusing
+% bounding boxes of the previous frame to make process more efficient
 %
-% proposals = regionProposal(obj, regressionBatch, scoresBatch)
+% proposals = regionProposal(obj, regressionBatch, scoresBatch, knownBBoxes)
 % applies regressionBatch to the anchors to get a set of region proposals
+% and reuses them with a desired amount of additional regions
 % and refines it using selectStrongestBbox(NMS).
 % regressionBatch is a h-by-w-by-numAnchors*4-by-batch dlarray(SSCB).
 % scoresBatch is a h-by-w-by-numAnchors-by-batch dlarray(SSCB).
@@ -14,6 +23,11 @@ function proposals = sequentialRegionProposal(obj, regressionBatch, scoresBatch,
 % 
 % These outputs are further refined by additional layers within Mask R-CNN
 % to produce the final object detections and mask segmentations.
+
+if isempty(knownbboxes) %catch empty known boxes and do default proposal without foreknowledge
+    proposals = regionProposal(obj, regressionBatch, scoresBatch);
+    return
+end
 
 featureSize = size(scoresBatch);
             
@@ -53,10 +67,15 @@ for i = 1:N
         scores(lowScores,:) = [];
     end
     
+    %Add known bboxes with maximum score to guarantee they are selected
+    bboxes = cat(1,bboxes, knownbboxes);
+    scores = cat(1, scores, ones([size(knownbboxes,1), 1]) * (max(scores)+1) );
+
+
     % PreNMS pick N strongest bboxes
     [~, ~, idx] = selectStrongestRegions(extractdata(bboxes),...
                                          extractdata(scores),...
-                                         obj.NumStrongestRegionsBeforeProposalNMS);
+                                         obj.NumStrongestRegionsBeforeProposalNMS); 
     bboxes = bboxes(idx,:);
     scores = scores(idx,:);
 
@@ -64,7 +83,7 @@ for i = 1:N
     [~, ~, index] = selectStrongestBbox(extractdata(bboxes), extractdata(scores), ...
         'RatioType', 'Union', ...
         'OverlapThreshold', obj.OverlapThreshold,...
-        'NumStrongest', obj.NumStrongestRegions);
+        'NumStrongest', size(knownbboxes,1) + numAdditionalProposals); %add all known boxes and specified additonal amount
 
     bboxes = bboxes(index,:);
     
