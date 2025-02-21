@@ -462,8 +462,65 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             
         end
         
+  
+    function varargout = segmentFrame(obj, frame, knownbboxes, options)
+        
+        arguments
+            obj 
+            frame {}
+            knownbboxes (:,4) = []
+            options.Threshold (1,1){mustBeNumeric, mustBePositive, mustBeLessThanOrEqual(options.Threshold, 1), mustBeReal} = 0.7
+            options.NumStrongestRegions (1,1) {mustBeNumeric, mustBePositive, mustBeReal} = 1000
+            options.NumAdditionalProposals (1,1) {mustBeNumeric, mustBePositive, mustBeReal} = max(size(knownbboxes, 1)*2, 100); %2/3 of proposals are new by (with a minimum of 100) by default
+            options.SelectStrongest (1,1) logical = true
+            options.MinSize (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeInteger} = [1,1]
+            options.MaxSize (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeInteger} = obj.InputSize(1:2)
+            options.ExecutionEnvironment {mustBeMember(options.ExecutionEnvironment,{'gpu','cpu','auto'})} = 'auto'
+            options.WriteLocation {mustBeTextScalar} = fullfile(pwd,'SegmentObjectResults')
+            options.MiniBatchSize (1,1) {mustBeNumeric, mustBePositive, mustBeReal, mustBeInteger} = 1
+            options.NamePrefix {mustBeTextScalar} = "segmentObj"
+            options.Verbose (1,1) {validateLogicalFlag} = true
+
+        end    
+        
+        if(isequal(options.ExecutionEnvironment, 'auto'))
+            if(canUseGPU)
+                options.ExecutionEnvironment = 'gpu';
+            end
+        end
+        
+        % If writeLocation is set with a non-ds input, throw a warning
+        if(~matlab.io.datastore.internal.shim.isDatastore(frame) &&...
+                ~strcmp(options.WriteLocation, fullfile(pwd,'SegmentObjectResults')))
+
+            warning(message('vision:maskrcnn:WriteLocNotSupported'));
+        end
+
+            
+        % Update the prediction parameters
+        obj.ScoreThreshold = options.Threshold;
+        obj.NumStrongestRegions = options.NumStrongestRegions;
+        obj.UseSelectStrongest = options.SelectStrongest;
+        obj.MinSize = options.MinSize;
+        obj.MaxSize = options.MaxSize;
+        
+        masks = [];
+        boxLabel = [];
+        boxScore = [];
+        boxes = [];
+
+            nargoutchk(0,4);
+            [varargout{1:nargout}] = ...
+                                        segmentObjectsInVideo(obj, frame, knownbboxes, ...
+                                                                options.NumAdditionalProposals,...
+                                                                options.ExecutionEnvironment);
+            
+        end
+        
     end
-    
+
+
+
     
     %======================================================================
     methods(Access=public)
@@ -854,6 +911,92 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
 
         end
         
+        function [masks, boxLabel, boxScore, boxes] = segmentObjectsInVideo(obj, im, knownbboxes, numAdditionalProposals, executionEnvironment)
+        
+            orgSize = size(im);
+    
+            % Resize and normalize image
+            [im, scaleRatio] = preprocessImage(obj, single(im), obj.InputSize);
+
+            if(isequal(executionEnvironment, 'gpu'))
+                %GPU
+                im = gpuArray(im);
+            else
+                %Host
+                if(isgpuarray(im))
+                    im = extractData(im);
+                end
+            end
+            
+            dlX = dlarray(im, 'SSCB');
+            netOut = sequentialPredict(obj, dlX, knownbboxes, numAdditionalProposals);
+            imageSize = size(im);
+            [boxes, boxLabel, boxScore] = postProcessOutputs(obj,...
+                                          extractdata(netOut{2}),...
+                                          extractdata(netOut{3}),...
+                                          extractdata(netOut{1}), imageSize, 1);
+            
+            boxes = boxes{1};
+            boxLabel = boxLabel{1};
+            boxScore = boxScore{1};
+
+            % If predicted boxes are empty, return empty mask & empty cat for
+            % labels
+            if(isempty(boxes))
+                boxLabel = categorical(boxLabel, 1:numel(obj.ClassNames), obj.ClassNames);
+                masks = zeros(0,0,0, 'like', boxes);
+                return;
+            end
+            
+            maskBranchBoxes = [boxes  ones(size(boxes,1), 1)];
+            
+            maskBranchBoxes = vision.internal.cnn.boxUtils.xywhToX1Y1X2Y2(...
+                                                                         maskBranchBoxes);
+    
+            dlBoxes = dlarray(maskBranchBoxes', 'SSCB');
+            
+            % Feature pooling for mask branch
+            dlMaskPooled = roiAlignPooling(obj, netOut{4}, dlBoxes, obj.MaskPoolSize);
+            
+            dlPostFeatureMask = predict(obj.PostPoolFeatureExtractionNet, dlMaskPooled, dlMaskPooled, 'Acceleration','auto');
+            
+            % Predict on mask branch to get h x w x numClasses x numProposals
+            % cropped masks.
+            dlMasks = predict(obj.MaskSegmentationHead, dlPostFeatureMask);
+            dlMasks = extractdata(dlMasks);
+    
+            % Extract the cropped mask corresponding to the boxLabel for
+            % each proposal.
+            finalCroppedMasks = zeros(size(dlMasks,1), size(dlMasks, 2),...
+                                      size(boxes,1));
+            
+            for i = 1:size(boxes,1)
+                finalCroppedMasks(:,:,i) = dlMasks(:,:, boxLabel(i), i);
+            end
+            
+            % Final box detections in original image coordinates
+            if(isgpuarray(boxes))
+                boxes = gather(boxes);
+            end
+            boxes = bboxResizePixel(obj, floor(boxes), 1/scaleRatio);
+
+            boxes = clipBoxes(obj, boxes, orgSize);
+            
+            % Filter out zero width height predictions
+            invalidBoxes = (boxes(:,3)==0 | boxes(:,4)==0);
+            boxes(invalidBoxes,:)=[];
+            boxLabel(invalidBoxes) = [];
+            boxScore(invalidBoxes) = [];
+
+            % Generate full sized masks from cropped masks
+            masks = generateFullSizedMasks(obj, finalCroppedMasks, boxes, orgSize);
+            
+            % Convert boxLabels to categorical
+            boxLabel = categorical(boxLabel, 1:numel(obj.ClassNames), obj.ClassNames);
+        end
+
+
+
         
         function [finalBoxes, finalLabels, finalScores] = postProcessOutputs(obj, deltas, scores, proposals, imageSize, batchSize)
             % postProcessOutputs converts network outputs to box detections

@@ -4,7 +4,8 @@ function proposals = sequentialRegionProposal(obj, regressionBatch, scoresBatch,
         regressionBatch dlarray
         scoresBatch dlarray
         knownbboxes (:, 4) = []
-        numAdditionalProposals (1,1) {mustBeInteger, mustBePositive} = min(size(knownbboxes, 1)*2, 100); %2/3 of proposals are new by (with a minimum of 100) by default
+        numAdditionalProposals (1,1) {mustBeInteger, mustBePositive} = max(size(knownbboxes, 1)*2, 100);
+    end%2/3 of proposals are new by (with a minimum of 100) by default
 % sequentialRegionProposal Region proposal functional layer reusing
 % bounding boxes of the previous frame to make process more efficient
 %
@@ -24,7 +25,7 @@ function proposals = sequentialRegionProposal(obj, regressionBatch, scoresBatch,
 % to produce the final object detections and mask segmentations.
 
 %catch empty known boxes--that is, no information from the previous frame--and do default proposal without foreknowledge
-if isempty(knownbboxes) 
+if isempty(knownbboxes)
     proposals = regionProposal(obj, regressionBatch, scoresBatch);
     return
 end
@@ -67,7 +68,8 @@ for i = 1:N
         scores(lowScores,:) = [];
     end
     
-    %Add known bboxes with maximum score to guarantee they are selected
+    %Add known bboxes with maximum score to guarantee they are selected and
+    %prioritized over overlapping proposals
     bboxes = cat(1,bboxes, knownbboxes);
     scores = cat(1, scores, ones([size(knownbboxes,1), 1]) * (max(scores)+1) );
 
