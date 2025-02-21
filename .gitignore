@@ -13,3 +13,4 @@
 *.onnx
 *.zip
 *.asv
+./CNNTraining/PastLives/*

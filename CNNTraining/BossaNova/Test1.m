@@ -56,7 +56,7 @@ tic
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
 net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.1,NumStrongestRegions=100, SelectStrongest=true, MinSize=[2 2],MaxSize=[80 80]);
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.1,NumStrongestRegions=5000, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
 %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
@@ -72,6 +72,34 @@ figure, imshow(overlayedImage)
 % Show the bounding boxes and labels on the objects
 %showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
 toc
+
+
+
+
+%%
+tic
+% %% utility to use model to test certain images 
+% im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
+% 
+net.ProposalsOutsideImage='clip';
+     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.1,NumStrongestRegions=900, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
+%  
+% %%
+% imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
+
+if(isempty(masks))
+    overlayedImage = im(:,:,1);
+else
+    overlayedImage = insertObjectMask(im(:,:,1), masks,Color=lines(size(masks, 3)) );
+end
+
+figure, imshow(overlayedImage)
+
+% Show the bounding boxes and labels on the objects
+%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+toc
+
+
 
 %%
 X=dlarray(single(im), 'SSCB');

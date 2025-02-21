@@ -116,7 +116,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
         
         % Stage 1 (RPN) Loss
         % --------------------
-        YRPNClass = sigmoid(YRPNClass);
+        YRPNClass = softmax(YRPNClass);
 
         LossRPNClass = vision.internal.cnn.maskrcnn.CrossEntropy(YRPNClass, RPNClassificationTargets);
          

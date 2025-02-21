@@ -16,7 +16,7 @@ NetDataDir = "~/Scratch/NetData/NetDataResNext101"
 net = MRCNN(trainClassNames,ABs, NetDataDir,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16)
 
 
-ds = fileDatastore("~/Scratch/AllDSFs/DSFs", ReadFcn=@(x)MATReader1C(x, 0)); %training data
+ds = fileDatastore("~/Scratch/AllDSFs/DSFs", ReadFcn=@(x)MATReader1C(x, 1)); %training data
 valds = fileDatastore("~/Scratch/AllDSFs/ValDSFs", ReadFcn=@(x)MATReader1C(x, 0)); %validation data
 
 preview(ds)
@@ -50,7 +50,7 @@ options = trainingOptions("adam", ...
     Shuffle="every-epoch", ...
     GradientThreshold=1 )
 
-[net,info1] = trainMRCNN(ds,net,options, NumStrongestRegions=5000, NumRegionsToSample=200, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
+[net,info1] = trainMRCNN(ds,net,options, NumStrongestRegions=1200, NumRegionsToSample=128, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
 save("ResN101-Warmup1.mat");
 %% phase 2, initializing all layers
 options = trainingOptions("adam", ...
@@ -71,7 +71,7 @@ options = trainingOptions("adam", ...
     Shuffle="every-epoch", ...
     GradientThreshold=1 )
 
-[net,info1] = trainMRCNN(ds,net,options, NumStrongestRegions=5000, NumRegionsToSample=200, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
+[net,info1] = trainMRCNN(ds,net,options, NumStrongestRegions=1200, NumRegionsToSample=128, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
 save("ResN101-Warmup2.mat");
 
 %% phase 3, train everything
@@ -96,5 +96,5 @@ options = trainingOptions("adam", ...
     GradientThreshold=1, ...
     ValidationPatience=6)
 
-[net,info3] = trainMRCNN(ds,net,options, NumStrongestRegions=5000, NumRegionsToSample=200, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
+[net,info3] = trainMRCNN(ds,net,options, NumStrongestRegions=1200, NumRegionsToSample=128, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=true)
 save("ResN101-FINAL.mat");

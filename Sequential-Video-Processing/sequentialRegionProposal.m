@@ -4,8 +4,7 @@ function proposals = sequentialRegionProposal(obj, regressionBatch, scoresBatch,
         regressionBatch dlarray
         scoresBatch dlarray
         knownbboxes (:, 4) = []
-        numAdditionalProposals (1,1) {mustBeInteger, mustBePositive} = 100
-    end
+        numAdditionalProposals (1,1) {mustBeInteger, mustBePositive} = min(size(knownbboxes, 1)*2, 100); %2/3 of proposals are new by (with a minimum of 100) by default
 % sequentialRegionProposal Region proposal functional layer reusing
 % bounding boxes of the previous frame to make process more efficient
 %
