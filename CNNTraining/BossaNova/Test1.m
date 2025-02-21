@@ -13,7 +13,7 @@ imageSizeTrain = [528 704 1];
 
 ABs = [20 20; 20 40; 40 20]*2;
 ABs = [ABs; ABs*2; ABs*4; ABs*8];
-NetDataDir = "./NetDataRes101";
+NetDataDir = "./NetDataResNext101";
  
 net = MRCNN(trainClassNames,ABs, NetDataDir,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16)
 
@@ -52,8 +52,7 @@ im=repmat(im ,[1 1 1]);
 im=rand([520 704]);
 %%
 tic
-% %% utility to use model to te
-% st certain images 
+% %% utility to use model to test certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
 net.ProposalsOutsideImage='clip';
