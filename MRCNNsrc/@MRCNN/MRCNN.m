@@ -322,10 +322,6 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
     
             [dlRPNScores, dlRPNReg] = predict(obj.RegionProposalNet, dlFeatures, 'Outputs',{'RPNClassOut', 'RPNRegOut'});
             
-            %redundant, added a dl layer instead
-            % dlRPNScores=softmax(dlRPNScores); %custom: softmax to ensure RPN predictions are not small numbers
-            
-
             % Call region proposal
             dlProposals = regionProposal(obj, dlRPNReg, dlRPNScores);
             
@@ -333,6 +329,26 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
     
             dlFinalFeatures = predict(obj.PostPoolFeatureExtractionNet, dlPooled, dlPooled, 'Acceleration','auto');
     
+            [dlBoxReg, dlBoxScores] = predict(obj.DetectionHeads, dlFinalFeatures, 'Acceleration','auto', 'Outputs',{'detectorRegOut', 'detectorClassOut'});
+            
+            outputFeatures{1} = dlProposals;
+            outputFeatures{2}= dlBoxReg;
+            outputFeatures{3}= dlBoxScores;
+            outputFeatures{4}= dlFeatures;
+
+        end
+        function outputFeatures = sequentialPredict(obj, dlX, knownBBoxes, numAdditionalProposals)
+        
+            dlFeatures = predict(obj.FeatureExtractionNet, dlX, 'Acceleration','auto');
+            
+            [dlRPNScores, dlRPNReg] = predict(obj.RegionProposalNet, dlFeatures, 'Outputs',{'RPNClassOut', 'RPNRegOut'});
+            
+            dlProposals = sequentialRegionProposal(obj, dlRPNReg, dlRPNScores, knownBBoxes, numAdditionalProposals); 
+            
+            dlPooled = roiAlignPooling(obj, dlFeatures, dlProposals, obj.PoolSize);
+            
+            dlFinalFeatures = predict(obj.PostPoolFeatureExtractionNet, dlPooled, dlPooled, 'Acceleration','auto');
+            
             [dlBoxReg, dlBoxScores] = predict(obj.DetectionHeads, dlFinalFeatures, 'Acceleration','auto', 'Outputs',{'detectorRegOut', 'detectorClassOut'});
             
             outputFeatures{1} = dlProposals;
