@@ -58,7 +58,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
 
         MinScore = 0;
         
-        OverlapThreshold = 0.3
+        OverlapThreshold = 0.7 %works best, per literature
 
         NumStrongestRegionsBeforeProposalNMS = 6000
         NumStrongestRegions = 1000
@@ -158,15 +158,15 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
 
             dir =pwd;
             % Load pre-trained network
-            data = load([NetDataDir+"/dlnetPostFeature.mat"] );
+            data = load([NetDataDir+"/"+options.ModelName+"/dlnetPostFeature.mat"] );
             obj.PostPoolFeatureExtractionNet = data.dlnetPostFeature;
-            data = load([NetDataDir+"/dlnetFeature.mat"] );
+            data = load([NetDataDir+"/"+options.ModelName+"/dlnetFeature.mat"] );
             obj.FeatureExtractionNet = data.dlnetFeature;
-            data = load([NetDataDir+"/dlnetRPN.mat"] );
+            data = load([NetDataDir+"/"+options.ModelName+"/dlnetRPN.mat"] );
             obj.RegionProposalNet = data.dlnetRPN;
-            data = load([NetDataDir+"/dlnetDetectHead.mat"] );
+            data = load([NetDataDir+"/"+options.ModelName+"/dlnetDetectHead.mat"] );
             obj.DetectionHeads = data.dlnetDetectHead;
-            data = load([NetDataDir+"/dlnetMaskHead.mat"] );
+            data = load([NetDataDir+"/"+options.ModelName+"/dlnetMaskHead.mat"] );
             obj.MaskSegmentationHead = data.dlnetMaskHead;
             
             % Customize network for new input size
