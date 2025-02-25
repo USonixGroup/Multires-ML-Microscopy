@@ -138,15 +138,14 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
     
     % Constructors
     methods
-        function obj = MRCNN(classNames, anchorBoxes, NetDataDir, options)
+        function obj = MRCNN(classNames, anchorBoxes, options)
             arguments
                 classNames {validateClassNames, mustBeUniqueNames} = ''
                 anchorBoxes (:,2){mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = []
-                NetDataDir {mustBeTextScalar}= "./NetDataRes101";
                 options.InputSize {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = []
                 options.PoolSize (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = [14 14]
                 options.MaskPoolSize (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = [14 14]
-                options.ModelName {mustBeTextScalar} = 'MRCNN'
+                options.ModelName {mustBeTextScalar} = 'ResNet50'
                 options.ScaleFactor (1,2) {mustBeNumeric, mustBePositive, mustBeReal, mustBeFinite} = [1 1]/16
             end
             
@@ -156,17 +155,18 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             % weights and properties will be populated by the loadobj
             % method.
 
-            dir =pwd;
             % Load pre-trained network
-            data = load([NetDataDir+"/"+options.ModelName+"/dlnetPostFeature.mat"] );
+            dir = which('SegmentCells'); %find and load network from path of all files
+            dir = dir(1:end-14);
+            data = load([dir+"/NetData/"+options.ModelName+"/dlnetPostFeature.mat"] );
             obj.PostPoolFeatureExtractionNet = data.dlnetPostFeature;
-            data = load([NetDataDir+"/"+options.ModelName+"/dlnetFeature.mat"] );
+            data = load([dir+"/NetData/"+options.ModelName+"/dlnetFeature.mat"] );
             obj.FeatureExtractionNet = data.dlnetFeature;
-            data = load([NetDataDir+"/"+options.ModelName+"/dlnetRPN.mat"] );
+            data = load([dir+"/NetData/"+options.ModelName+"/dlnetRPN.mat"] );
             obj.RegionProposalNet = data.dlnetRPN;
-            data = load([NetDataDir+"/"+options.ModelName+"/dlnetDetectHead.mat"] );
+            data = load([dir+"/NetData/"+options.ModelName+"/dlnetDetectHead.mat"] );
             obj.DetectionHeads = data.dlnetDetectHead;
-            data = load([NetDataDir+"/"+options.ModelName+"/dlnetMaskHead.mat"] );
+            data = load([dir+"/NetData/"+options.ModelName+"/dlnetMaskHead.mat"] );
             obj.MaskSegmentationHead = data.dlnetMaskHead;
             
             % Customize network for new input size
@@ -1476,3 +1476,7 @@ function nextMessage = iPrintProgress(printer, prevMessage, k)
 end
 
 %--------------------------------------------------------------------------
+function data = iLoadNetwork(spkgroot, datafolder, matfile)
+matfile = fullfile(spkgroot, datafolder, matfile);
+data = load(matfile);
+end
