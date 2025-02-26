@@ -27,21 +27,12 @@ FeretDiameter{:,1} = FeretDiameter{:,1} * lpp; %convert diameters to micrometers
 
 
 %%
-sizeX = size(im,2);
-sizeY = size(im,1);
-
-[X Y] = meshgrid(1:sizeX, 1:sizeY);
-
-%find weighted coordinate for intensity in each mask
-WCx = squeeze(sum(maskIms .* X, 1:2))./Area; 
-WCy = squeeze(sum(maskIms .* Y, 1:2))./Area; 
-
-%use bounding box values to find position relative to cell itself, normalize by the size of the bounding box
-
-NWCx = bbox(:,1)- WCx;
-NWCy = bbox(:,2)- WCy;
+[NWCx, NWCy] = weightedCentroid(maskIms, bbox);
 
 
+%%
+
+%%
 %%
 
 
@@ -71,12 +62,27 @@ for i=[1:size(maskIms,3)]
 
     Skewness(i,:) = skewness(ins);
     Kurtosis(i,:) = kurtosis(ins);
+    STDeviaton(i,:) = std(ins);
     
 
 end
     PCIstats = table(Mean, Min, Max, P5, P95);
-    IntensityDistStats = table(Skewness, Kurtosis);
+    IntensityDistStats = table(STDeviaton, Skewness, Kurtosis);
 
-    
+end
 
+
+function [NWCx, NWCy] = weightedCentroid(maskIms, bbox);
+
+sizeX = size(maskIms,2);
+sizeY = size(maskIms,1);
+
+[X Y] = meshgrid(1:sizeX, 1:sizeY);
+
+%find weighted coordinate for intensity in each mask
+WCx = squeeze(sum(maskIms .* X, 1:2)./sum(maskIms, 1:2)); 
+WCy = squeeze((sum(maskIms .* Y, 1:2))./sum(maskIms, 1:2)); 
+%use bounding box values to find position relative to cell itself, normalize by the size of the bounding box
+NWCx = (WCx - bbox(:,1))./bbox(:,3);
+NWCy = (WCy - bbox(:,2))./bbox(:,4);
 end
