@@ -5,45 +5,44 @@ load("label_A172_Phase_A7_1_00d04h00m_1.tif.mat") %test file for one image, will
 im = rescale(im);
 
 
+% todo: make into function, rename all variables to be readable as is to simplify export (nikhil, pls do :) )
+
 numCells = size(masks, 3); %find number of cells
 maskIms = masks .* im(:,:,:); %pixels within each maskt
 
 lpp=1; %micrometers/pixel
 
 Area = squeeze(sum(masks,1:2)) * lpp^2; %total number of pixels per mask times constant
-%Area = table(Area);
+Area = table(Area);
 
 for i=[1:numCells]
 
-    Perim(i, 1) = sum(bwperim(masks(:,:,i)),"all");
+    Perimeter(i, 1) = sum(bwperim(masks(:,:,i)),"all");
     FeretDiameter(i,:) = bwferet(masks(:,:,i));
 
+    ShapeProps(i,:) = regionprops(masks(:,:,i), "Eccentricity","Circularity","Solidity");
+
 end
+ShapeProps = struct2table(ShapeProps);
+Perimeter = table(Perimeter);
+
 FeretDiameter{:,1} = FeretDiameter{:,1} * lpp; %convert diameters to micrometers (but not coordinates in the image)
 
 
 % Phase Contrast Intensity stats for each mask
 [PCIstats, IntensityDistStats] = IntensityStats(maskIms);
 
-
-%%
+%normalized weighted centroid
 [NWCx, NWCy] = weightedCentroid(maskIms, bbox);
+NWC = table([NWCx NWCy]);
+NWC.Properties.VariableNames="NormalizedWeightedCentroid";
+
+%find aspect ratio from bounding boxes
+AspectRatio = bbox(:,3)./bbox(:,4);
+AspectRatio = table(AspectRatio);
 
 
-%%
-
-%%
-%%
-
-
-%%
-
-
-
-%%
-imshow(a(:,:,3))
-
-
+Out = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter);
 
 %%
 function [PCIstats, IntensityDistStats] = IntensityStats(maskIms)
@@ -64,8 +63,8 @@ for i=[1:size(maskIms,3)]
     Kurtosis(i,:) = kurtosis(ins);
     STDeviaton(i,:) = std(ins);
     
-
 end
+
     PCIstats = table(Mean, Min, Max, P5, P95);
     IntensityDistStats = table(STDeviaton, Skewness, Kurtosis);
 
@@ -85,4 +84,5 @@ WCy = squeeze((sum(maskIms .* Y, 1:2))./sum(maskIms, 1:2));
 %use bounding box values to find position relative to cell itself, normalize by the size of the bounding box
 NWCx = (WCx - bbox(:,1))./bbox(:,3);
 NWCy = (WCy - bbox(:,2))./bbox(:,4);
+
 end
