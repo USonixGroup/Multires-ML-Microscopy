@@ -118,7 +118,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
         % --------------------
         YRPNClass = sigmoid(YRPNClass);
 
-        LossRPNClass = vision.internal.cnn.maskrcnn.CrossEntropy(YRPNClass, RPNClassificationTargets);
+        LossRPNClass = NegativeMining(YRPNClass, RPNClassificationTargets, 3); 
          
         LossRPNReg = vision.internal.cnn.maskrcnn.smoothL1(YRPNRegDeltas, RPNRegressionTargets, RPNRegWeights);
          
