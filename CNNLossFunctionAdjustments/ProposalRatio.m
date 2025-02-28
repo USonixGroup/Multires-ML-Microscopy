@@ -1,10 +1,4 @@
-clear
-clc
-close all
-load("TestValues.mat", "YRPNClass", "RPNClassificationTargets")
-
-ratio=3;
-%%
+function loss = NegativeMining(YRPNClass, RPNClassificationTargets, Ratio)
 
 %pre-allocate loss array for each minibatch
 lossBatch = zeros(size(YRPNClass, 4), 1);
@@ -30,7 +24,7 @@ for i=[1:size(YRPNClass, 4)]
     %of the number of positive examples (up to the entire array), one is
     %added to ensure value cannot be zero
     numPos = sum(posIndex);
-    numNeg = min((numPos+1)*ratio, sum(negIndex) );
+    numNeg = min((numPos+1)*Ratio, sum(negIndex) );
 
     posProps = Class(posIndex);
 
@@ -48,5 +42,6 @@ for i=[1:size(YRPNClass, 4)]
     lossBatch(i) = crossentropy(ClassY, TargetsY) * length(TargetsY)./length(Targets) *10;
 end
 
-    loss = sum(lossBatch);
 
+loss = sum(lossBatch);   
+end
