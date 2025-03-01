@@ -71,7 +71,7 @@ function im = DWT_Denoise(im, Options)
         end
         
         % Inverse DWT to reconstruct cA
-        cA_rec = idwt2(cA_rec, cH, cV, cD, wavelet);
+        cA_rec = idwt2(cA_rec, cH, cV, cD, Options.Wavelet);
 
         coeffs{level-1, 1} = cA_rec;
     end
