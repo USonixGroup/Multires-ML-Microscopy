@@ -13,9 +13,8 @@ imageSizeTrain = [528 704 1];
 
 ABs = [20 20; 20 40; 40 20]*2;
 ABs = [ABs; ABs*2; ABs*4; ABs*8];
-NetDataDir = "./NetDataResNext101";
  
-net = MRCNN(trainClassNames,ABs, NetDataDir,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16)
+net = MRCNN(trainClassNames,ABs,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16,ModelName='ResNet50')
 
 
 %%
@@ -56,11 +55,11 @@ tic
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
 net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.1,NumStrongestRegions=5000, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.5,NumStrongestRegions=1200, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80] );
 %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
-
+%%
 if(isempty(masks))
     overlayedImage = im(:,:,1);
 else
@@ -82,7 +81,7 @@ tic
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
 net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.1,NumStrongestRegions=900, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
+     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.1,NumStrongestRegions=1200, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
 %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
