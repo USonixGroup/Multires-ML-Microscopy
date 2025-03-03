@@ -68,11 +68,11 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
     end
     
     % Prediction params
-    properties (SetAccess = public, GetAccess = ?tSegmentObjects)
+    properties (SetAccess = public, GetAccess = public)
         BoxMean = [0 0 0 0];
         BoxStd = [1 1 1 1]
         ScoreThreshold
-        NumStrongestRegionsPrediction = 300
+        NumStrongestRegionsPrediction = 1000
         OverlapThresholdPrediction = 0.5
         UseSelectStrongest
         MaskThreshold = 0.5

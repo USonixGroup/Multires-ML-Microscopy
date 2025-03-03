@@ -7,8 +7,8 @@ function loss = NegativeMining(YRPNClass, RPNClassificationTargets, Ratio)
     Class = extractdata(reshape(YRPNClass, N, B));
     Targets = reshape(RPNClassificationTargets, N, B);
     
-    % Sort each batch individually (ascending: least confident → most confident)
-    [Class, idx] = sort(Class, 1, 'ascend'); 
+    % Sort each batch individually (descending: most confident → least confident)
+    [Class, idx] = sort(Class, 1, 'descend'); 
     Targets = Targets(idx + (0:(B-1))*N); % Reorder targets accordingly
 
     % Compute positive and negative indices per batch
@@ -39,6 +39,6 @@ function loss = NegativeMining(YRPNClass, RPNClassificationTargets, Ratio)
     TargetsY = [ones(sum(numPos), 1); zeros(sum(numNeg), 1)];
 
     % Compute cross-entropy loss batch-wise
-    loss = crossentropy(ClassY, TargetsY) .* (length(TargetsY) ./ N) * 10;
+    loss = crossentropy(ClassY, TargetsY) .* (length(TargetsY) ./ N);
     
 end

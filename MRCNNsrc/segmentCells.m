@@ -1,19 +1,19 @@
 function [masks labels scores boxes] = segmentCells(net, Image, Options)
 % SEGMENTCELLS De-noises image via DWT-thresholding and uses a Mask R-CNN network to segment cells in an image
     arguments %checks and default values
-        net MRCNN 
-        Image = [];
-        Options.Denoise (1,1) logical =1;
-        Options.Wavelet char = 'db5'
-        Options.Level (1,1) {mustBeInteger, mustBeReal} = 4 
-        Options.DWTThreshold {mustBeGreaterThanOrEqual(Options.DWTThreshold, 0), mustBeLessThan(Options.DWTThreshold, 1), mustBeReal(Options.DWTThreshold)}= 0.02; 
-        Options.SegmentThreshold (1,1) {mustBeGreaterThanOrEqual(Options.SegmentThreshold, 0), mustBeLessThan(Options.SegmentThreshold, 1), mustBeReal(Options.SegmentThreshold)}= 0.5;
-        Options.NumstrongestRegions (1,1) = Inf;
-        Options.SelectStrongest logical = 1;
-        Options.MinSize (1,2) = [8 8];
-        Options.MaxSize (1,2) = [64 64];
-        Options.ShowMasks (1,1) logical = 0;
-        Options.ShowScores (1,1) logical = 0;
+        net MRCNN %classification network input
+        Image = []; %image to be classified
+        Options.Denoise (1,1) logical =1; %on-off option for denoising process
+        Options.Wavelet char = 'db5' %wavelet to use in denoising
+        Options.Level (1,1) {mustBeInteger, mustBeReal} = 4 %levels of decomposition in de-noising
+        Options.DWTThreshold {mustBeGreaterThanOrEqual(Options.DWTThreshold, 0), mustBeLessThan(Options.DWTThreshold, 1), mustBeReal(Options.DWTThreshold)}= 0.02; %threshold for decomposition
+        Options.SegmentThreshold (1,1) {mustBeGreaterThanOrEqual(Options.SegmentThreshold, 0), mustBeLessThan(Options.SegmentThreshold, 1), mustBeReal(Options.SegmentThreshold)}= 0.5; %segmentation confidence threshold for MRCNN results
+        Options.NumstrongestRegions (1,1) = Inf; %number of regions to take forward from RPN
+        Options.SelectStrongest logical = 1; 
+        Options.MinSize (1,2) = [8 8]; %minimum segmenteed object size
+        Options.MaxSize (1,2) = [64 64]; %minimum segmenteed object size
+        Options.ShowMasks (1,1) logical = 0; %plot showing masks
+        Options.ShowScores (1,1) logical = 0; %add scores to plot
     end
 
 if Options.Denoise==1 %apply denoising
