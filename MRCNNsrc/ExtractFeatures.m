@@ -8,7 +8,7 @@ arguments
 end
 
 % todo: make into function, rename all variables to be readable as is to simplify export (nikhil, pls do :) )
-if class(im) == 'uint8'
+if strmatch(class(im),'uint8')
     im = rescale(im);
 end
 
