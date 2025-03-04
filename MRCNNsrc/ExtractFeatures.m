@@ -8,6 +8,13 @@ arguments
 end
 
 % todo: make into function, rename all variables to be readable as is to simplify export (nikhil, pls do :) )
+
+%bugs: some proposals result in different data types, potentially related
+%to empty proposals or certain shapes?
+%test with mutliple images outputted from the CNN to identify what causes
+%the data types to change and make it consistent for all inputs
+
+
 if strmatch(class(im),'uint8')
     im = rescale(im);
 end
@@ -71,12 +78,12 @@ for i=[1:size(maskIms,3)]
 
     Skewness(i,:) = skewness(ins);
     Kurtosis(i,:) = kurtosis(ins);
-    STDeviaton(i,:) = std(ins);
+    STDeviation(i,:) = std(ins);
     
 end
 
     PCIstats = table(Mean, Min, Max, P5, P95);
-    IntensityDistStats = table(STDeviaton, Skewness, Kurtosis);
+    IntensityDistStats = table(STDeviation, Skewness, Kurtosis);
 
 end
 
