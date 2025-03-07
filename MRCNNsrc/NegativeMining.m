@@ -34,9 +34,13 @@ function loss = NegativeMining(YRPNClass, RPNClassificationTargets, Ratio)
     posProps = posProps(posProps ~= 0);
     negProps = negProps(negProps ~= 0);
 
+    %Label smoothing parameter epsilon, to improve performance by making
+    %predictions slightly less confident
+    eps = 0.05;
+
     % Concatenate final selection per batch
     ClassY = [posProps; negProps];
-    TargetsY = [ones(sum(numPos), 1); zeros(sum(numNeg), 1)];
+    TargetsY = [ones(sum(numPos), 1)*(1-eps); ones(sum(numNeg), 1)*eps];
 
     % Compute cross-entropy loss batch-wise, normalize for number of
     % examples used

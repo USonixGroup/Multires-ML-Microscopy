@@ -14,6 +14,9 @@ end
 %test with mutliple images outputted from the CNN to identify what causes
 %the data types to change and make it consistent for all inputs
 
+%also pls add the scores (require it as an input) and bounding box
+%coordinates to the final table output so that it can be exported
+%easily, tytyty
 
 if strmatch(class(im),'uint8')
     im = rescale(im);
