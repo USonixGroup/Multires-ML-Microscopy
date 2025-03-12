@@ -3,9 +3,8 @@
 %test with mutliple images outputted from the CNN to identify what causes
 %the data types to change and make it consistent for all inputs
 
-%also pls add the scores (require it as an input) and bounding box
-%coordinates to the final table output so that it can be exported
-%easily
+%also pls add the scores (require it as an input) so that it can be
+%exported easily
 
 function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio)
 
@@ -32,6 +31,10 @@ Area = table(Area);
 
 % Pre-allocation of data structures for improved computational speed
 Perimeter = zeros(numCells, 1);
+BoundingBoxHeight = zeros(numCells, 1);
+BoundingBoxWidth = zeros(numCells, 1);
+BoundingBoxX = zeros(numCells, 1);
+BoundingBoxY = zeros(numCells, 1);
 
 for i = 1:numCells
     % Compute perimeter of the cell mask
@@ -42,12 +45,18 @@ for i = 1:numCells
 
     % Compute region properties: Eccentricity, Circularity, Solidity
     ShapeProps(i,:) = regionprops(cellMasks(:,:,i), "Eccentricity","Circularity","Solidity");
-
+    
+    % Extract bounding box features
+    BoundingBoxX(i) = boundingBoxes(i,1); % X position
+    BoundingBoxY(i) = boundingBoxes(i,2); % Y position
+    BoundingBoxWidth(i) = boundingBoxes(i,3); % Width
+    BoundingBoxHeight(i) = boundingBoxes(i,4); % Height
 end
 
 % Convert structures to tables
 ShapeProps = struct2table(ShapeProps);
 Perimeter = table(Perimeter);
+BoundingBoxTable = table(BoundingBoxX, BoundingBoxY, BoundingBoxWidth, BoundingBoxHeight);
 
 % Convert diameters to micrometers (but not coordinates in the image)
 FeretDiameter{:,1} = FeretDiameter{:,1} * pixelToAreaRatio;
@@ -58,14 +67,14 @@ FeretDiameter{:,1} = FeretDiameter{:,1} * pixelToAreaRatio;
 % Compute normalised weighted centroid using bounding boxes
 [NWCx, NWCy] = weightedCentroid(maskIms, boundingBoxes);
 NWC = table([NWCx NWCy]);
-NWC.Properties.VariableNames="NormalizedWeightedCentroid";
+NWC.Properties.VariableNames = "NormalizedWeightedCentroid";
 
 % Compute aspect ratio from bounding boxes
 AspectRatio = boundingBoxes(:,3)./boundingBoxes(:,4);
 AspectRatio = table(AspectRatio);
 
 % Combine all extracted features into a single table
-extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter);
+extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter, BoundingBoxTable);
 
 end
 %%
