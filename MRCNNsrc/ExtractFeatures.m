@@ -77,6 +77,9 @@ AspectRatio.Properties.VariableNames = "Aspect Ratio";
 % Renaming IntensityDistStats variable names
 IntensityDistStats.Properties.VariableNames = ["Standard Deviation", "Skewness", "Kurtosis"];
 
+% Renaming BoundingBoxTable variable names
+BoundingBoxTable.Properties.VariableNames = ["Bounding Box X", "Bounding Box Y", "Bounding Box Width", "Bounding Box Height"];
+
 % Combine all extracted features into a single table
 extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter, BoundingBoxTable);
 
