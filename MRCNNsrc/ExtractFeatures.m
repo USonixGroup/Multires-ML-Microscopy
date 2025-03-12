@@ -6,6 +6,10 @@
 %add the scores (require it as an input) so that it can be
 %exported easily
 
+% Add functionality to extend analysis for multiple images (i.e. dataset
+% input). Yigit -- can this function be run in a loop for each masked image
+% outputted by the CNN?
+
 function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio)
 
 arguments
