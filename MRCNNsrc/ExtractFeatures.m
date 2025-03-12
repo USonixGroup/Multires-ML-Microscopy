@@ -1,14 +1,3 @@
-
-function Out = ExtractFeatures(im, masks, bbox, lpp)
-arguments
-    im 
-    masks 
-    bbox 
-    lpp (1,1) {mustBePositive}= 1; %pixel to area conversion
-end
-
-% todo: make into function, rename all variables to be readable as is to simplify export (nikhil, pls do :) )
-
 %bugs: some proposals result in different data types, potentially related
 %to empty proposals or certain shapes?
 %test with mutliple images outputted from the CNN to identify what causes
@@ -16,53 +5,70 @@ end
 
 %also pls add the scores (require it as an input) and bounding box
 %coordinates to the final table output so that it can be exported
-%easily, tytyty
+%easily
 
-if strmatch(class(im),'uint8')
-    im = rescale(im);
+function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio)
+
+arguments
+    imageData % Input image
+    cellMasks % Binary masks for segmented cells
+    boundingBoxes % Bounding boxes for each cell
+    pixelToAreaRatio (1,1) {mustBePositive}= 1; % Conversion factor from pixels to area
 end
 
-numCells = size(masks, 3); %find number of cells
-maskIms = masks .* im(:,:,:); %pixels within each maskt
+% Normalise image if it is of type uint8
+if strmatch(class(imageData),'uint8')
+    imageData = rescale(imageData);
+end
 
-lpp=1; %micrometers/pixel
+numCells = size(cellMasks, 3); % Determine the number of detected cells
+maskIms = cellMasks .* imageData(:,:,:); % Apply masks to isolate cell regions
 
-Area = squeeze(sum(masks,1:2)) * lpp^2; %total number of pixels per mask times constant
+pixelToAreaRatio=1; % micrometers/pixel ratio
+
+% Compute the area of each cell in micrometers squared
+Area = squeeze(sum(cellMasks,1:2)) * pixelToAreaRatio^2; % Total number of pixels per mask times constant
 Area = table(Area);
 
-for i=[1:numCells]
+% Pre-allocation of data structures for improved computational speed
+Perimeter = zeros(numCells, 1);
 
-    Perimeter(i, 1) = sum(bwperim(masks(:,:,i)),"all");
-    FeretDiameter(i,:) = bwferet(masks(:,:,i));
+for i = 1:numCells
+    % Compute perimeter of the cell mask
+    Perimeter(i, 1) = sum(bwperim(cellMasks(:,:,i)),"all");
 
-    ShapeProps(i,:) = regionprops(masks(:,:,i), "Eccentricity","Circularity","Solidity");
+    % Compute Feret diameter
+    FeretDiameter(i,:) = bwferet(cellMasks(:,:,i));
+
+    % Compute region properties: Eccentricity, Circularity, Solidity
+    ShapeProps(i,:) = regionprops(cellMasks(:,:,i), "Eccentricity","Circularity","Solidity");
 
 end
+
+% Convert structures to tables
 ShapeProps = struct2table(ShapeProps);
 Perimeter = table(Perimeter);
 
-FeretDiameter{:,1} = FeretDiameter{:,1} * lpp; %convert diameters to micrometers (but not coordinates in the image)
-
+% Convert diameters to micrometers (but not coordinates in the image)
+FeretDiameter{:,1} = FeretDiameter{:,1} * pixelToAreaRatio;
 
 % Phase Contrast Intensity stats for each mask
 [PCIstats, IntensityDistStats] = IntensityStats(maskIms);
 
-%normalized weighted centroid
-[NWCx, NWCy] = weightedCentroid(maskIms, bbox);
+% Compute normalised weighted centroid using bounding boxes
+[NWCx, NWCy] = weightedCentroid(maskIms, boundingBoxes);
 NWC = table([NWCx NWCy]);
 NWC.Properties.VariableNames="NormalizedWeightedCentroid";
 
-%find aspect ratio from bounding boxes
-AspectRatio = bbox(:,3)./bbox(:,4);
+% Compute aspect ratio from bounding boxes
+AspectRatio = boundingBoxes(:,3)./boundingBoxes(:,4);
 AspectRatio = table(AspectRatio);
 
-
-Out = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter);
+% Combine all extracted features into a single table
+extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter);
 
 end
 %%
-
-
 
 
 function [PCIstats, IntensityDistStats] = IntensityStats(maskIms)
