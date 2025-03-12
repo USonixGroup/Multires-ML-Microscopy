@@ -1,22 +1,27 @@
-%bugs: some proposals result in different data types, potentially related
-%to empty proposals or certain shapes?
-%test with mutliple images outputted from the CNN to identify what causes
-%the data types to change and make it consistent for all inputs
+% Bugs
+% some proposals result in different data types, potentially related
+% to empty proposals or certain shapes?
+% test with mutliple images outputted from the CNN to identify what causes
+% the data types to change and make it consistent for all inputs
 
-%add the scores (require it as an input) so that it can be
-%exported easily
+% Scores
+% Functionality to store confidence scores for each cell added.
+% Requires ammending once the CNN output/function input has the scores
+% added.
 
+% Multiple image
 % Add functionality to extend analysis for multiple images (i.e. dataset
 % input). Yigit -- can this function be run in a loop for each masked image
 % outputted by the CNN?
 
-function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio)
+function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio, scores)
 
 arguments
     imageData % Input image
     cellMasks % Binary masks for segmented cells
     boundingBoxes % Bounding boxes for each cell
-    pixelToAreaRatio (1,1) {mustBePositive}= 1; % Conversion factor from pixels to area
+    pixelToAreaRatio (1,1) {mustBePositive} = 1; % Conversion factor from pixels to area
+    scores = 1; % Scores input from CNN
 end
 
 % Normalise image if it is of type uint8
@@ -39,6 +44,7 @@ BoundingBoxHeight = zeros(numCells, 1);
 BoundingBoxWidth = zeros(numCells, 1);
 BoundingBoxX = zeros(numCells, 1);
 BoundingBoxY = zeros(numCells, 1);
+scoresCells = zeros(numCells, 1);
 
 for i = 1:numCells
     % Compute perimeter of the cell mask
@@ -55,12 +61,16 @@ for i = 1:numCells
     BoundingBoxY(i) = boundingBoxes(i,2); % Y position
     BoundingBoxWidth(i) = boundingBoxes(i,3); % Width
     BoundingBoxHeight(i) = boundingBoxes(i,4); % Height
+
+    % Save the confidence scores for each cell (from CNN output)
+    scoresCells(i,1) = scores; % To be amended once scores input from CNN is added
 end
 
 % Convert structures to tables
 ShapeProps = struct2table(ShapeProps);
 Perimeter = table(Perimeter);
 BoundingBoxTable = table(BoundingBoxX, BoundingBoxY, BoundingBoxWidth, BoundingBoxHeight);
+ScoresTable = table(scoresCells);
 
 % Convert diameters to micrometers (but not coordinates in the image)
 FeretDiameter{:,1} = FeretDiameter{:,1} * pixelToAreaRatio;
@@ -84,8 +94,11 @@ IntensityDistStats.Properties.VariableNames = ["Standard Deviation", "Skewness",
 % Renaming BoundingBoxTable variable names
 BoundingBoxTable.Properties.VariableNames = ["Bounding Box X", "Bounding Box Y", "Bounding Box Width", "Bounding Box Height"];
 
+% Renaming ScoresTable variable names
+ScoresTable.Properties.VariableNames = ["Scores"];
+
 % Combine all extracted features into a single table
-extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter, BoundingBoxTable);
+extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter, BoundingBoxTable, ScoresTable);
 
 end
 %%
