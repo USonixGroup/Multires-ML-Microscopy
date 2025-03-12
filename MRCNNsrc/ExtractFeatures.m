@@ -3,7 +3,7 @@
 %test with mutliple images outputted from the CNN to identify what causes
 %the data types to change and make it consistent for all inputs
 
-%also pls add the scores (require it as an input) so that it can be
+%add the scores (require it as an input) so that it can be
 %exported easily
 
 function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio)
@@ -44,7 +44,7 @@ for i = 1:numCells
     FeretDiameter(i,:) = bwferet(cellMasks(:,:,i));
 
     % Compute region properties: Eccentricity, Circularity, Solidity
-    ShapeProps(i,:) = regionprops(cellMasks(:,:,i), "Eccentricity","Circularity","Solidity");
+    ShapeProps(i,:) = regionprops(cellMasks(:,:,i), "Eccentricity", "Circularity", "Solidity");
     
     % Extract bounding box features
     BoundingBoxX(i) = boundingBoxes(i,1); % X position
@@ -67,11 +67,15 @@ FeretDiameter{:,1} = FeretDiameter{:,1} * pixelToAreaRatio;
 % Compute normalised weighted centroid using bounding boxes
 [NWCx, NWCy] = weightedCentroid(maskIms, boundingBoxes);
 NWC = table([NWCx NWCy]);
-NWC.Properties.VariableNames = "NormalizedWeightedCentroid";
+NWC.Properties.VariableNames = "Normalised Weighted Centroid";
 
 % Compute aspect ratio from bounding boxes
 AspectRatio = boundingBoxes(:,3)./boundingBoxes(:,4);
 AspectRatio = table(AspectRatio);
+AspectRatio.Properties.VariableNames = "Aspect Ratio";
+
+% Renaming IntensityDistStats variable names
+IntensityDistStats.Properties.VariableNames = ["Standard Deviation", "Skewness", "Kurtosis"];
 
 % Combine all extracted features into a single table
 extractedTable = horzcat(Area, Perimeter, PCIstats, IntensityDistStats, NWC, ShapeProps, AspectRatio, FeretDiameter, BoundingBoxTable);
