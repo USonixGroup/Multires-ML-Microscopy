@@ -1,3 +1,5 @@
+function extractedTable = ExtractFeatures(image, masks, boundingBoxes, pixeltoLengthRatio, scores)
+
 % Bugs
 % some proposals result in different data types, potentially related
 % to empty proposals or certain shapes?
@@ -14,28 +16,28 @@
 % input). Yigit -- can this function be run in a loop for each masked image
 % outputted by the CNN?
 
-function extractedTable = ExtractFeatures(imageData, cellMasks, boundingBoxes, pixelToAreaRatio, scores)
+
 
 arguments
-    imageData % Input image
-    cellMasks % Binary masks for segmented cells
+    image % Input image
+    masks % Binary masks for segmented cells
     boundingBoxes % Bounding boxes for each cell
-    pixelToAreaRatio (1,1) {mustBePositive} = 1; % Conversion factor from pixels to area
-    scores = 1; % Scores input from CNN
+    pixeltoLengthRatio (1,1) {mustBePositive} = 1; % Conversion factor from pixels to length
+    scores = []; % Scores input from CNN
 end
 
 % Normalise image if it is of type uint8
-if strmatch(class(imageData),'uint8')
-    imageData = rescale(imageData);
+if strmatch(class(image),'uint8')
+    image = rescale(image);
 end
 
-numCells = size(cellMasks, 3); % Determine the number of detected cells
-maskIms = cellMasks .* imageData(:,:,:); % Apply masks to isolate cell regions
+numCells = size(masks, 3); % Determine the number of detected cells
+maskIms = masks .* image(:,:,:); % Apply masks to isolate cell regions
 
-pixelToAreaRatio=1; % micrometers/pixel ratio
+pixeltoLengthRatio=1; % micrometers/pixel ratio
 
 % Compute the area of each cell in micrometers squared
-Area = squeeze(sum(cellMasks,1:2)) * pixelToAreaRatio^2; % Total number of pixels per mask times constant
+Area = squeeze(sum(masks,1:2)) * pixeltoLengthRatio^2; % Total number of pixels per mask times constant
 Area = table(Area);
 
 % Pre-allocation of data structures for improved computational speed
@@ -48,13 +50,13 @@ scoresCells = zeros(numCells, 1);
 
 for i = 1:numCells
     % Compute perimeter of the cell mask
-    Perimeter(i, 1) = sum(bwperim(cellMasks(:,:,i)),"all");
+    Perimeter(i, 1) = sum(bwperim(masks(:,:,i)),"all");
 
     % Compute Feret diameter
-    FeretDiameter(i,:) = bwferet(cellMasks(:,:,i));
+    FeretDiameter(i,:) = bwferet(masks(:,:,i));
 
     % Compute region properties: Eccentricity, Circularity, Solidity
-    ShapeProps(i,:) = regionprops(cellMasks(:,:,i), "Eccentricity", "Circularity", "Solidity");
+    ShapeProps(i,:) = regionprops(masks(:,:,i), "Eccentricity", "Circularity", "Solidity");
     
     % Extract bounding box features
     BoundingBoxX(i) = boundingBoxes(i,1); % X position
@@ -73,7 +75,7 @@ BoundingBoxTable = table(BoundingBoxX, BoundingBoxY, BoundingBoxWidth, BoundingB
 ScoresTable = table(scoresCells);
 
 % Convert diameters to micrometers (but not coordinates in the image)
-FeretDiameter{:,1} = FeretDiameter{:,1} * pixelToAreaRatio;
+FeretDiameter{:,1} = FeretDiameter{:,1} * pixeltoLengthRatio;
 
 % Phase Contrast Intensity stats for each mask
 [PCIstats, IntensityDistStats] = IntensityStats(maskIms);
