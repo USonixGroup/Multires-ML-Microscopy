@@ -25,28 +25,28 @@ sorted_anchors = [anchor_widths(area_idx), anchor_heights(area_idx), aspect_rati
 % Display results
 disp('Optimized anchors (width, height, aspect ratio):');
 disp(sorted_anchors);
-
+%%
 % Visualize anchor boxes
 figure;
 cs = lines(length(anchor_heights));
 
-%%
-for i = 1:length(anchor_heights)
+for i = length(anchor_heights):-1:1
     rectangle('Position', [0, 0, anchor_widths(i), anchor_heights(i)], ...
               'EdgeColor', cs(i,:), LineWidth=2);
     hold on;
 end
 axis equal;
-title('Optimized Anchor Boxes');
-xlim([0 71])
-ylim([0 71])
+title('Optimized Anchor Boxes', Interpreter='latex');
+%xlim([0 107])
+%ylim([0 107])
+fontname('CMU Serif')
 
 
 %%
 % test with own aspect ratios of from the previous one if this section is
 % not run
 
-abs = generateAnchorBoxes([14 21 32 47 71], [0.75 1 1.5]);
+%abs = generateAnchorBoxes([14 21 32 47 71], [0.75 1 1.5]);
 
 
 % optimal configuration that is consistent with sizes and aspect ratios
@@ -54,7 +54,8 @@ abs = [14 14; 14 21; 21 14;...
     21 21; 21 32; 32 21;...
     32 32; 47 32; 32 47;...
     47 47; 71 47; 47 71;...
-    71 71];
+    71 71; 107 71; 71 107;...
+    107 107];
 
  % ABs = [20 20; 20 40; 40 20]*2; %defaults
  % abs = [ABs; ABs*2; ABs*4; ABs*8];
@@ -92,7 +93,7 @@ histogram(max_ious);
 title('Max IoU Distribution');
 
 %%
-%histogram(max_unopt, 'edgecolor','none');
+histogram(max_unopt, 'edgecolor','none');
 hold on
 
 histogram(max_kmc, 'edgecolor','none');
@@ -106,7 +107,8 @@ fontsize(12, "points")
 %legend("K-Means Clustering Results", "Optimized Anchor Boxes", Location='northwest',Interpreter='latex');
 
 legend("Unoptimized Boxes", "K-Means Clustering Results", "Optimized Anchor Boxes", Location='northwest',Interpreter='latex');
-
+xlabel('Intersection over Union',Interpreter='latex');
+ylabel('Frequency',Interpreter='latex');
 
 %%
 function anchorBoxes = generateAnchorBoxes(scales, aspectRatios)

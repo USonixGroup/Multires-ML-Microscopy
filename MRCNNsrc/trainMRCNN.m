@@ -152,7 +152,7 @@
 %                         
 %                            Default: "none"
 %
-% 'AssignAllGTinRPN'        Whether to assign all anchor boxes as a
+% 'ForcedPositiveProposals' Whether to assign all anchor boxes as a
 %                           positive example, regarless of IoU values
 %
 %                           Default: "True"
