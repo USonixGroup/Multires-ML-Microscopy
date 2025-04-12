@@ -547,10 +547,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             
         end
         
-    end
-
-
-            function varargout = segmentFrame(obj, frame, RPNScores, options)
+        function varargout = segmentFrame(obj, frame, RPNScores, options)
         
         arguments
             obj 
@@ -598,12 +595,16 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
 
             nargoutchk(0,4);
             [varargout{1:nargout}] = ...
-                                        segmentObjectsinVideo(obj, frame, RPNScores, options.Alpha ...
+                                        segmentObjectsinVideo(obj, frame, RPNScores, options.Alpha, ...
                                                                 options.ExecutionEnvironment);
             
         end
         
     end
+
+
+
+         
 
 
 
