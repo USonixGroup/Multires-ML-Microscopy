@@ -79,11 +79,29 @@ function im = DWT_Denoise(im, Options)
 
 
     % Reconstruct the image using the thresholded coefficients (level 1
-    % decomposition coefficients)
+    % decomposition coefficients) 
+    % Additionally, checking the row and column size of Approximation
+    % coefficients
     cA = coeffs{1, 1};
+    cA_cols = size(cA,2);
+    cA_rows = size(cA,1);
     cH = coeffs{1, 2};
     cV = coeffs{1, 3};
     cD = coeffs{1, 4};
+    cD_cols = size(cD,2);
+    cD_rows = size(cD,1);
+
+    % Amending Approximation Coefficient row and column size if required
+    if cA_cols ~= cD_cols
+        cA(:,cA_cols) = [];
+        
+    end
+
+    if cA_rows ~= cD_rows
+        cA(cA_rows,:) = [];
+    end
+
+    % Performing inverse DWT
     im = idwt2(cA, cH, cV, cD, Options.Wavelet);
 
 end

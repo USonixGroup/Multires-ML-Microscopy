@@ -1,11 +1,13 @@
-function thresh_reconstructed_img = DWT_Denoise(img, Options)
-    % Default argument values specified
+function im = DWT_Denoise(im, Options)
+% DWT_DENOISE De-noises image via DWT-thresholding on multiple levels of decomposition
     arguments
-        img
-        Options.Wavelet = 'db5' % default value
-        Options.Level = 4 % default value
-        Options.Threshold = 0.1; % default value
+        im
+        Options.Wavelet char = 'db5' % default value
+        Options.Level (1,1) {mustBeInteger, mustBeReal} = 4 % default value
+        Options.Threshold {mustBeGreaterThanOrEqual(Options.Threshold, 0), mustBeLessThan(Options.Threshold, 1), mustBeReal(Options.Threshold)}= 0.1; % default value
     end
+
+    Options.Threshold = iValidateThresholdLength(Options.Threshold, Options.Level);
 
     % If input is a scalar value then create an array
     if isscalar(Options.Threshold)
@@ -28,7 +30,7 @@ function thresh_reconstructed_img = DWT_Denoise(img, Options)
     % previous level approximation coefficients
     for level = 1:Options.Level
         if level == 1
-            [cA, cH, cV, cD] = dwt2(img, Options.Wavelet);
+            [cA, cH, cV, cD] = dwt2(im, Options.Wavelet);
         else
             [cA, cH, cV, cD] = dwt2(cA, Options.Wavelet);
         end
@@ -59,32 +61,64 @@ function thresh_reconstructed_img = DWT_Denoise(img, Options)
         cH = coeffs{level, 2};
         cV = coeffs{level, 3};
         cD = coeffs{level, 4};
-        cA_rec = idwt2(cA_rec, cH, cV, cD, Options.Wavelet);
         
-        % Bug fix - resolving issue with extra column
-        if size(cA_rec,2) == 96
-            cA_rec(:,96) = [];
+        % Ensuring cA and cD have the same number of columns and rows
+        cA_cols = size(cA_rec,2);
+        cA_rows = size(cA_rec,1);
+        cD_cols = size(cD,2);
+        cD_rows = size(cD,1);
+
+        if cA_cols ~= cD_cols
+            cA_rec(:,cA_cols) = [];
+            
+        end
+
+        if cA_rows ~= cD_rows
+            cA_rec(cA_rows,:) = [];
         end
         
+        % Inverse DWT to reconstruct cA
+        cA_rec = idwt2(cA_rec, cH, cV, cD, Options.Wavelet);
+
         coeffs{level-1, 1} = cA_rec;
     end
+    
+
 
     % Reconstruct the image using the thresholded coefficients (level 1
-    % decomposition coefficients)
+    % decomposition coefficients) 
+    % Additionally, checking the row and column size of Approximation
+    % coefficients
     cA = coeffs{1, 1};
+    cA_cols = size(cA,2);
+    cA_rows = size(cA,1);
     cH = coeffs{1, 2};
     cV = coeffs{1, 3};
     cD = coeffs{1, 4};
-    thresh_reconstructed_img = idwt2(cA, cH, cV, cD, Options.Wavelet);
+    cD_cols = size(cD,2);
+    cD_rows = size(cD,1);
 
-    % Display the original and reconstructed images
-    figure;
-    subplot(1,2,1);
-    imshow(img, []);
-    title('Original Image');
+    % Amending Approximation Coefficient row and column size if required
+    if cA_cols ~= cD_cols
+        cA(:,cA_cols) = [];
+        
+    end
 
-    subplot(1,2,2);
-    imshow(thresh_reconstructed_img, []);
-    title('Thresholded Reconstructed Image');
-    
+    if cA_rows ~= cD_rows
+        cA(cA_rows,:) = [];
+    end
+
+    % Performing inverse DWT
+    im = idwt2(cA, cH, cV, cD, Options.Wavelet);
+
+end
+
+function thresholds = iValidateThresholdLength(thresholds, levels)
+    [r c] = size(thresholds);
+    if ~r==1 & c==1   %contingency if user enters transpose of desired shape
+        thresholds = thresholds';
+    end
+    if ~(and(r==1,c==1) || and(r==1,c==levels) || and(r==levels,c==1))
+        error('Thresholds must be of size (1,1) or (1,levels)');
+    end
 end
