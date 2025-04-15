@@ -6,7 +6,7 @@ clc
 folder_path = 'test_images';
 imageFiles = dir(fullfile(folder_path, '*.png'));
 
-for imageNumber = 1:length(imageFiles)
+for imageNumber = 26:26 %length(imageFiles)
     % Get the full image path
     imagePath = fullfile(folder_path, imageFiles(imageNumber).name);
 
@@ -56,12 +56,12 @@ for imageNumber = 1:length(imageFiles)
     D = sqrt((u - center_u).^2 + (v - center_v).^2);
     
     % Defining the maximum frequency threshold for removal
-    threshold_max = 350;
+    threshold_max = 100;
 
     % Defining index i
     i = 1;
     
-    for threshold = 1:threshold_max  
+    for threshold = 100:threshold_max  
         threshold_vals(i) = threshold;
         
         % threshold is the radius of the low frequency region to block
@@ -69,7 +69,7 @@ for imageNumber = 1:length(imageFiles)
         % Create a binary mask for high-pass filtering (>)
         % Create a binary mask for low-pass filtering (<)
         % 1 if outside filter, 0 if inside filter
-        high_pass_filter = double(D > threshold);
+        high_pass_filter = double(D < threshold);
     
         % Apply high-pass filter in the frequency domain
         ft_filtered = ft .* high_pass_filter;
@@ -89,33 +89,45 @@ for imageNumber = 1:length(imageFiles)
         imgs = rescale(imgs);
         img_filtered = rescale(img_filtered);
     
-        % Displaying results
-        tiledlayout(2,2);
-
+        % Set default font and interpreter globally for consistency
+        set(groot, 'DefaultTextInterpreter', 'latex');
+        set(groot, 'DefaultAxesTickLabelInterpreter', 'latex');
+        set(groot, 'DefaultLegendInterpreter', 'latex');
+        set(groot, 'DefaultAxesFontName', 'CMU Serif');
+        set(groot, 'DefaultTextFontName', 'CMU Serif');
+        
+        % Create tiled layout
+        figure;
+        t = tiledlayout(2,2,'Padding','compact','TileSpacing','compact');
+        
         % Displaying original grayscale image
         nexttile(1);
-        imshow(imgs)
-        title('Grayscale Original Image')
-
+        imshow(imgs);
+        title('Grayscale Original Image');
+        
         % Display Fourier transform
         nexttile(2);
-        imagesc(log_magnitude_ft)
-        colormap(gca, jet); % Jet colormap
-        colorbar; % Colorbar to show intensity scale
+        imagesc(log_magnitude_ft);
+        colormap(gca, jet);
+        colorbar;
         title('Fourier Transform of Image');
-
-        % Displaying filtered fourier transform
+        xlabel('Frequency X (Hz)');
+        ylabel('Frequency Y (Hz)');
+        
+        % Displaying filtered Fourier transform
         nexttile(4);
         imagesc(log_magnitude_ft_filtered);
         colormap(gca, jet);
         colorbar;
-        title('Filtered Fourier Transform (High-Pass)');
-
+        title('Filtered Fourier Transform (Low-Pass)');
+        xlabel('Frequency X (Hz)');
+        ylabel('Frequency Y (Hz)');
+        
         % Display the filtered image
         nexttile(3);
         imshow(img_filtered);
-        title('Image After High-Pass Filtering');
-
+        title('Image After Low-Pass Filtering');
+       
         drawnow
         pause(5/1000)
         
@@ -126,7 +138,6 @@ for imageNumber = 1:length(imageFiles)
         i = i + 1;
     end
 
-    imageNumber
 end
 
 % Calculate mean of statistics extracted

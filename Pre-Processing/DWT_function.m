@@ -129,22 +129,27 @@ img = mean(im,3);
 img = rescale(img);
 
 % % Displaying the original image
-% figure
-% imshow(img)
-% title('Original')
+figure
+imshow(img)
+title('Original')
 
-noisy_image = noise_addition(img);  % Apply noise addition function 
+i_min = min(img);
+i_max = max(img);
+
+img_adjusted = (img - i_min)/(i_max - i_min) * 255;
+
+% noisy_image = noise_addition(img);  % Apply noise addition function 
 
 % % Displaying the image after noise added
 % figure
 % imshow(noisy_image)
 % title('Additional Noise')
 
-reconstructed_image = denoise(noisy_image); % Apply denoising function 
+% reconstructed_image = denoise(noisy_image); % Apply denoising function 
 
 % % Displaying the image after DWT denoising is applied
 % figure
 % imshow(reconstructed_image)
 % title('Denoised')
 
-[approx_coeff, vert_coeff, horiz_coeff, diag_coeff] = coefficients(reconstructed_image); % Calculate the DWT coefficients (For CNN input)
+% [approx_coeff, vert_coeff, horiz_coeff, diag_coeff] = coefficients(reconstructed_image); % Calculate the DWT coefficients (For CNN input)
