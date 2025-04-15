@@ -62,12 +62,18 @@ function im = DWT_Denoise(im, Options)
         cV = coeffs{level, 3};
         cD = coeffs{level, 4};
         
-        % Ensuring cA and cD have the same number of columns
+        % Ensuring cA and cD have the same number of columns and rows
         cA_cols = size(cA_rec,2);
-        cD_cols = size(cH,2);
-        
+        cA_rows = size(cA_rec,1);
+        cD_cols = size(cD,2);
+        cD_rows = size(cD,1);
+
         if cA_cols ~= cD_cols
             cA_rec(:,cA_cols) = [];
+        end
+
+        if cA_rows ~= cD_rows
+            cA_rec(cA_rows,:) = [];
         end
         
         % Inverse DWT to reconstruct cA
