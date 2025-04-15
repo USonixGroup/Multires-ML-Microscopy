@@ -11,9 +11,12 @@ data = preview(ds)
 trainClassNames = ["CellA"];
 imageSizeTrain = [528 704 1];
 
-ABs = [20 20; 20 40; 40 20]*2;
-ABs = [ABs; ABs*2; ABs*4; ABs*8];
- 
+ABs = [14 14; 14 21; 21 14;...
+    21 21; 21 32; 32 21;...
+    32 32; 47 32; 32 47;...
+    47 47; 71 47; 47 71;...
+    71 71];
+
 net = MRCNN(trainClassNames,ABs,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16,ModelName='ResNet50')
 
 
@@ -21,31 +24,26 @@ net = MRCNN(trainClassNames,ABs,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16,M
 options = trainingOptions("adam", ...
     InitialLearnRate=0.001, ...
     LearnRateSchedule="piecewise", ...
-    LearnRateDropPeriod=100, ...
+    LearnRateDropPeriod=45, ...
     LearnRateDropFactor=0.1, ...
-    ValidationPatience=6, ...
     Plot="none", ...  
-    MaxEpochs=12, ...
+    MaxEpochs=50, ...
     MiniBatchSize=1, ...
-    BatchNormalizationStatistics="moving", ...
     ResetInputNormalization=false, ...
     ExecutionEnvironment="auto", ...
-    CheckpointPath="./", ...
-    CheckpointFrequency=1000, ...
     VerboseFrequency=1, ...
-    GradientThreshold=2)
-
+    L2Regularization=1e-5)
 
 %%
  
 
-[net,info] = trainMRCNN(ds,net,options, NumStrongestRegions=1000, NumRegionsToSample=100, PositiveOverlapRange=[0.7 1], NegativeOverlapRange=[0 0.3], ForcedPositiveProposals=false, FreezeSubNetwork="Backbone") 
+[net,info] = trainMRCNN(ds,net,options, NumStrongestRegions=20, NumRegionsToSample=10, PositiveOverlapRange=[0.5 1], NegativeOverlapRange=[0 0.5], ForcedPositiveProposals=true, FreezeSubNetwork="backbone") 
 
 
 %%
 load("SingleDS/label_A172_Phase_A7_1_00d00h00m_2.tif.mat", "im")
 im=rescale(im);
-im=repmat(im ,[1 1 1]);
+im=repmat(im ,[1 1 1]); 
 
 %%
 im=rand([520 704]);
@@ -54,8 +52,9 @@ tic
 % %% utility to use model to test certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
-net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.5,NumStrongestRegions=Inf, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80] );
+%net.ProposalsOutsideImage='clip';
+%net.MinScore = 0.001;
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.5,NumStrongestRegions=inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
 %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
@@ -72,7 +71,11 @@ figure, imshow(overlayedImage)
 %showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
 toc
 
-
+%%
+dlX = dlarray(im, 'SSCB');
+ dlFeatures = predict(net.FeatureExtractionNet, dlX, 'Acceleration','auto');
+    
+            [dlRPNScores, dlRPNReg] = predict(net.RegionProposalNet, dlFeatures, 'Outputs',{'RPNClassOut', 'RPNRegOut'});
 
 
 %%
@@ -81,9 +84,9 @@ tic
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
 net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.1,NumStrongestRegions=1200, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
+     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.5,NumStrongestRegions=1200, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
 %  
-% %%
+%%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
 
 if(isempty(masks))
@@ -100,6 +103,3 @@ toc
 
 
 
-%%
-X=dlarray(single(im), 'SSCB');
-out=predict(dlnetFeature, X);

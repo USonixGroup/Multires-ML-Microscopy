@@ -2,7 +2,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
 % This class defines the loss for maskrcnn object training
 
 % Copyright 2021-2023 The MathWorks, Inc.
-    properties (Access=private)
+    properties (Access=public)
         params
     end
 
@@ -42,6 +42,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
                                                                 obj.params.PositiveOverlapRange, obj.params.NegativeOverlapRange,...
                                                                 obj.params.ForcedPositiveProposals);
         
+        numPos = cellfun(@(x) sum(x), positiveIndex); %Calculate the number of positive examples in each batch
                                                             
         % Step 2: Calcuate regression targets as (dx, dy, log(dw), log(dh))
         regressionTargets = vision.internal.cnn.maskrcnn.generateRegressionTargets(gTruthBoxes, proposals,...
@@ -86,7 +87,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
         regressionTargets = reshape(regressionTargets, 1, 1, size(YRCNNReg,3),[]);
         instanceWeightsReg = reshape(instanceWeightsReg, 1, 1, size(YRCNNReg,3),[]);
         LossRCNNReg = vision.internal.cnn.maskrcnn.smoothL1(YRCNNReg, single(regressionTargets), single(instanceWeightsReg));
-         
+
         % Mask Loss (Weighted cross entropy)
         maskTargets= cat(4,maskTargets{:});
         positiveIndex = cat(1,positiveIndex{:});
@@ -98,7 +99,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
         % LossRCNNNum = abs(gtNum - numPosPredict)/(gtNum + numPosPredict);
         
         % Total Stage 2 loss
-         LossRCNN = LossRCNNReg + LossRCNNClass + LossRCNNMask;
+        LossRCNN = LossRCNNReg + LossRCNNClass + LossRCNNMask;
         
          
         % Generate RCNN response targets
@@ -117,13 +118,20 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
         % Stage 1 (RPN) Loss
         % --------------------
         YRPNClass = sigmoid(YRPNClass);
+    
+        %adjust targets for 0 value in the softmax
+        %RPNClassificationTargets(RPNClassificationTargets(==0) = 1/size(RPNClassificationTargets, 3);
+        %LossRPNClass = NegativeMining(YRPNClass, RPNClassificationTargets, 3); 
+        %LossRPNClass = vision.internal.cnn.maskrcnn.CrossEntropy(YRPNClass, RPNClassificationTargets);
+        LossRPNClass = RPNClassLoss(YRPNClass, RPNClassificationTargets);
 
-        LossRPNClass = NegativeMining(YRPNClass, RPNClassificationTargets, 3); 
-         
         LossRPNReg = vision.internal.cnn.maskrcnn.smoothL1(YRPNRegDeltas, RPNRegressionTargets, RPNRegWeights);
-         
-        LossRPN = LossRPNClass + LossRPNReg;
         
+
+        LossRPN = LossRPNClass + LossRPNReg;
+        %Double RPN loss if there are no positive proposals (adjusted for minibatch average)
+        LossRPN = LossRPN * (2 - nnz(numPos)/length(numPos)); 
+
         
         % Total Loss
         %------------
@@ -141,3 +149,4 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
     end
 
 end
+

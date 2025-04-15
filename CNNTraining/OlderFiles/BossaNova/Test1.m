@@ -54,7 +54,7 @@ im=repmat(im ,[1 1 1]);
 %%
 im=rand([520 704]);
 %%
-
+tic
 % %% utility to use model to te
 % st certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
@@ -64,6 +64,7 @@ im=rand([520 704]);
 % 
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
+toc
 
 if(isempty(masks))
     overlayedImage = im(:,:,1);
