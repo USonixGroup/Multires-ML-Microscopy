@@ -83,9 +83,7 @@ tic
 % %% utility to use model to test certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
-net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.5,NumStrongestRegions=1200, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
-%  
+
 %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
 
@@ -102,4 +100,5 @@ figure, imshow(overlayedImage)
 toc
 
 
+%%
 

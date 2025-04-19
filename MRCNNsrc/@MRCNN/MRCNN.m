@@ -365,11 +365,11 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             
             [dlRPNScores, dlRPNReg] = predict(obj.RegionProposalNet, dlFeatures, 'Outputs',{'RPNClassOut', 'RPNRegOut'});
             
-            if size(dlRPNScores) == size(RPNScores) & ~isempty(RPNScores)
+            if ~isempty(RPNScores)
             dlRPNScores = ( (RPNScores.*dlRPNScores)*Alpha +dlRPNScores)./(1+Alpha);
             end
             
-            dlProposals = regionProposal(obj, dlRPNReg, dlRPNScores, knownBBoxes, numAdditionalProposals); 
+            dlProposals = regionProposal(obj, dlRPNReg, dlRPNScores); 
             
             dlPooled = roiAlignPooling(obj, dlFeatures, dlProposals, obj.PoolSize);
             
@@ -563,7 +563,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             options.MiniBatchSize (1,1) {mustBeNumeric, mustBePositive, mustBeReal, mustBeInteger} = 1
             options.NamePrefix {mustBeTextScalar} = "segmentObj"
             options.Verbose (1,1) {validateLogicalFlag} = true
-            options.Alpha (1,1) {mustBeReal, mustBeGreaterThanOrEqual(options.Alpha, 0), mustBeLessThanOrEqual(options.Alpha, 1)} = 0.5;
+            options.Alpha (1,1) {mustBeReal, mustBeGreaterThanOrEqual(options.Alpha, 0), mustBeLessThanOrEqual(options.Alpha, 1)} = 0.15;
 
         end    
         
@@ -592,8 +592,9 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
         boxLabel = [];
         boxScore = [];
         boxes = [];
+        RPN = [];
 
-            nargoutchk(0,4);
+            nargoutchk(0,5);
             [varargout{1:nargout}] = ...
                                         segmentObjectsinVideo(obj, frame, RPNScores, options.Alpha, ...
                                                                 options.ExecutionEnvironment);
