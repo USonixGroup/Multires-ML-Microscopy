@@ -54,8 +54,9 @@ tic
 % 
 %net.ProposalsOutsideImage='clip';
 %net.MinScore = 0.001;
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.5,NumStrongestRegions=inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
-%  
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.2,NumStrongestRegions=inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
+toc
+     %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
 
@@ -68,7 +69,7 @@ end
 figure, imshow(overlayedImage)
 
 % Show the bounding boxes and labels on the objects
-%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
 toc
 
 %%
