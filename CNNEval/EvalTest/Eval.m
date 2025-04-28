@@ -3,19 +3,30 @@ clc
 close all
 
 % run image segmentation
-load("Res101-FINAL.mat", 'net')
+load("NetC.mat", 'net')
+
+net.OverlapThresholdRPN = 0.3;
+net.OverlapThresholdPrediction = 0.3;
+net.ScoreThreshold = 0.1;
+%%
+
+
+
+dsTest= fileDatastore("./SmallValDSFs", ReadFcn=@(x)TestIMsMATReader(x));
+
 tic
-dsTest= fileDatastore("SmallValDSFs/val1.tif.mat", ReadFcn=@(x)TestIMsMATReader(x));
 dsResults= segmentObjects(net, dsTest, "Threshold",0.15,"MinSize",[2 2],"MaxSize",[80 80],"NumStrongestRegions",inf,"SelectStrongest",true);
 toc
 %% evaluate
 
-clc
+
 
 dsResults = fileDatastore("./SegmentObjectResults/", ReadFcn=@(x)SegMATReader(x)); %segmented data
-dsTruth  = fileDatastore("./SmallValDSFs/val1.tif.mat", ReadFcn=@(x)TestMATReader(x)); %training data
+dsTruth  = fileDatastore("./SmallValDSFs", ReadFcn=@(x)TestMATReader(x)); %training data
 
-metrics = evaluateInstanceSegmentation(dsResults, dsTruth, 0.5);
+tic
+metrics = evaluateInstanceSegmentation(dsResults, dsTruth, 0.32,"Verbose",true);
+toc
 %save("metrics101-0.75.mat")
 
 

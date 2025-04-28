@@ -14,6 +14,9 @@ end
 
 
 %%
+ans=predict(obj.FeatureExtractionNet, dlX, 'Outputs',   'conv');
+
+
 for i = 1:262
 
     d = extractdata(ans(:,:,i));

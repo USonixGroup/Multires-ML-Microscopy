@@ -17,7 +17,7 @@ ABs = [14 14; 14 21; 21 14;...
     47 47; 71 47; 47 71;...
     71 71];
 
-net = MRCNN(trainClassNames,ABs,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16,ModelName='ResNet50')
+net = MRCNN(trainClassNames,ABs,InputSize=imageSizeTrain, ScaleFactor=[1 1]/16,ModelName='ResNext101')
 
 
 %%
@@ -54,12 +54,14 @@ tic
 % 
 %net.ProposalsOutsideImage='clip';
 %net.MinScore = 0.001;
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.2,NumStrongestRegions=inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.2,NumStrongestRegions=1000, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
 toc
-     %  
+
+%scores = 1./(1+exp(-scores));
+%  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
-
+%%
 if(isempty(masks))
     overlayedImage = im(:,:,1);
 else
@@ -69,8 +71,8 @@ end
 figure, imshow(overlayedImage)
 
 % Show the bounding boxes and labels on the objects
-showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
-toc
+%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+
 
 %%
 dlX = dlarray(im, 'SSCB');
