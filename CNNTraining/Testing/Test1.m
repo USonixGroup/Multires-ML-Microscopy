@@ -54,8 +54,9 @@ tic
 % 
 %net.ProposalsOutsideImage='clip';
 %net.MinScore = 0.001;
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.5,NumStrongestRegions=inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
-%  
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.2,NumStrongestRegions=inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
+toc
+     %  
 % %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
 
@@ -68,7 +69,7 @@ end
 figure, imshow(overlayedImage)
 
 % Show the bounding boxes and labels on the objects
-%showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
+showShape("rectangle", gather(boxes), "Label", scores, "LineColor",'r')
 toc
 
 %%
@@ -83,9 +84,7 @@ tic
 % %% utility to use model to test certain images 
 % im1=imread("../JSON_FORMATTING/LiveCellsIms1/livecell_test_images/A172_Phase_C7_1_00d00h00m_3.tif");
 % 
-net.ProposalsOutsideImage='clip';
-     [masks,labels,scores,boxes] = segmentFrame(net,im,boxes,Threshold=0.5,NumStrongestRegions=1200, NumAdditionalProposals=2, SelectStrongest=true, MinSize=[8 8],MaxSize=[80 80]);
-%  
+
 %%
 % imshow(insertObjectMask(im1,masks, Color=lines(size(masks, 3))))
 
@@ -102,4 +101,5 @@ figure, imshow(overlayedImage)
 toc
 
 
+%%
 

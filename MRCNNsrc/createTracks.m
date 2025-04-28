@@ -1,4 +1,4 @@
-function [tracks, trackingTable] = CreateTracks(tracks, detections, scores, frameIdx, trackingTable, args)
+function [tracks, trackingTable] = createTracks(tracks, detections, scores, frameIdx, trackingTable, args)
     % This function processes a single frame's detections and updates the tracks
     % 
     % Inputs:
@@ -12,6 +12,9 @@ function [tracks, trackingTable] = CreateTracks(tracks, detections, scores, fram
     % Optional parameters:
     %   'MinIoU' - Minimum IoU threshold for matching tracks (default: 0.3)
     %   'MaxInvisibleCount' - Maximum number of consecutive frames a track can be missing (default: 10)
+    %   'SizeWeight' - Weight for size difference in cost calculation (default: 0.2)
+    %   'AspectRatioWeight' - Weight for aspect ratio difference in cost calculation (default: 0.2)
+    %   'IoUWeight' - Weight for IoU component in cost calculation (default: 0.6)
     %
     % Outputs:
     %   tracks - Updated tracks structure
@@ -25,6 +28,18 @@ function [tracks, trackingTable] = CreateTracks(tracks, detections, scores, fram
         trackingTable
         args.MinIoU (1,1) double = 0.3
         args.MaxInvisibleCount (1,1) double = 10
+        args.SizeWeight (1,1) double = 0.2
+        args.AspectRatioWeight (1,1) double = 0.2
+        args.IoUWeight (1,1) double = 0.6
+    end
+    
+    % Validate weights sum to 1
+    totalWeight = args.SizeWeight + args.AspectRatioWeight + args.IoUWeight;
+    if abs(totalWeight - 1) > 1e-6
+        warning('Weights do not sum to 1. Normalizing weights.');
+        args.SizeWeight = args.SizeWeight / totalWeight;
+        args.AspectRatioWeight = args.AspectRatioWeight / totalWeight;
+        args.IoUWeight = args.IoUWeight / totalWeight;
     end
     
     % Extract parameters from arguments
@@ -76,14 +91,41 @@ function [tracks, trackingTable] = CreateTracks(tracks, detections, scores, fram
         return;
     end
     
-    % Calculate IoU between each detection and track
+    % Calculate combined cost metric between each detection and track
     numDetections = size(detections, 1);
     numTracks = length(tracks);
     costMatrix = zeros(numTracks, numDetections);
     
     for i = 1:numTracks
+        track_bbox = tracks(i).bbox;
+        track_width = track_bbox(3);
+        track_height = track_bbox(4);
+        track_size = track_width * track_height;
+        track_aspect = track_width / track_height;
+        
         for j = 1:numDetections
-            costMatrix(i, j) = 1 - bboxIoU(tracks(i).bbox, detections(j, :));
+            det_bbox = detections(j, :);
+            det_width = det_bbox(3);
+            det_height = det_bbox(4);
+            det_size = det_width * det_height;
+            det_aspect = det_width / det_height;
+            
+            % Calculate IoU component (lower is better)
+            iou = bboxIoU(track_bbox, det_bbox);
+            iou_cost = 1 - iou;
+            
+            % Calculate size difference component (normalized between 0 and 1)
+            % Using relative size difference: |s1-s2|/max(s1,s2)
+            size_diff = abs(track_size - det_size) / max(track_size, det_size);
+            
+            % Calculate aspect ratio difference component (normalized between 0 and 1)
+            % Using a bounded metric that approaches 1 as ratios diverge
+            aspect_diff = abs(track_aspect - det_aspect) / (1 + abs(track_aspect - det_aspect));
+            
+            % Combine the components with weights
+            costMatrix(i, j) = args.IoUWeight * iou_cost + ...
+                               args.SizeWeight * size_diff + ...
+                               args.AspectRatioWeight * aspect_diff;
         end
     end
     
