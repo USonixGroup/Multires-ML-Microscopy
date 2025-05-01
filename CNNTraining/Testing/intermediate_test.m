@@ -1,4 +1,4 @@
-for i = 1:300
+for i = 1:1024
 
     d = extractdata(dlFeatures(:,:,i));
     if max(d, [], "all")>0.1
@@ -14,10 +14,10 @@ end
 
 
 %%
-ans=predict(obj.FeatureExtractionNet, dlX, 'Outputs',   'conv');
+ans=predict(obj.FeatureExtractionNet, dlX, 'Outputs',   'gn4b7_branch2c');
 
 
-for i = 1:262
+for i = 1:256
 
     d = extractdata(ans(:,:,i));
     
@@ -25,7 +25,7 @@ for i = 1:262
     title(num2str(i))
         %caxis([0 1])
 
-        pause(0.3)
+        pause(0.1)
 end
 
 %%
