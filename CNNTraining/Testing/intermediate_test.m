@@ -1,7 +1,7 @@
 for i = 1:1024
 
     d = extractdata(dlFeatures(:,:,i));
-    if max(d, [], "all")>0.1
+    if max(d, [], "all")>1e-5
     
     imagesc(d); colorbar
     title(num2str(i))
@@ -14,18 +14,20 @@ end
 
 
 %%
-ans=predict(obj.FeatureExtractionNet, dlX, 'Outputs',   'gn4b7_branch2c');
+ans=predict(obj.FeatureExtractionNet, dlX, 'Outputs',   'conv1_relu');
 
 
 for i = 1:256
 
     d = extractdata(ans(:,:,i));
-    
+        if max(d, [], "all")>1e-3
+
     imagesc(d); colorbar
     title(num2str(i))
         %caxis([0 1])
 
-        pause(0.1)
+        pause(0.2)
+        end
 end
 
 %%

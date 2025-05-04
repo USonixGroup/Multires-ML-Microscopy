@@ -327,9 +327,9 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             dlProposals = regionProposal(obj, dlRPNReg, dlRPNScores);
             
             dlPooled = roiAlignPooling(obj, dlFeatures, dlProposals, obj.PoolSize);
-    
+            
             dlFinalFeatures = predict(obj.PostPoolFeatureExtractionNet, dlPooled, dlPooled, 'Acceleration','auto');
-    
+            
             [dlBoxReg, dlBoxScores] = predict(obj.DetectionHeads, dlFinalFeatures, 'Acceleration','auto', 'Outputs',{'detectorRegOut', 'detectorClassOut'});
             
             outputFeatures{1} = dlProposals;
