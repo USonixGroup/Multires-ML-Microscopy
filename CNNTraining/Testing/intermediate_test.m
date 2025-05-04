@@ -31,7 +31,7 @@ for i = 1:256
 end
 
 %%
-for i = 1:13
+for i = 1:26
 
     d = (ans(:,:,i));
     
