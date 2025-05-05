@@ -1,0 +1,30 @@
+Thank you for filling out a Git bug report!
+Please answer the following questions to help us understand your issue.
+
+What did you do before the bug happened? (Steps to reproduce your issue)
+Resize augmentation shuffles boxes incorrectly, hard coded temporary fix; will need to implement fully later in
+remove temp fix from files matreader1c and matreader3c
+add proper fix into resize function used for training
+
+
+
+Please review the rest of the bug report below.
+You can delete any lines you don't wish to share.
+
+
+[System Info]
+git version:
+git version 2.39.5 (Apple Git-154)
+cpu: arm64
+no commit associated with this build
+sizeof-long: 8
+sizeof-size_t: 8
+shell-path: /bin/sh
+feature: fsmonitor--daemon
+uname: Darwin 24.4.0 Darwin Kernel Version 24.4.0: Fri Apr 11 18:33:46 PDT 2025; root:xnu-11417.101.15~117/RELEASE_ARM64_T8112 arm64
+compiler info: clang: 17.0.0 (clang-1700.0.13.3)
+libc info: no libc information available
+$SHELL (typically, interactive shell): /bin/zsh
+
+
+[Enabled Hooks]

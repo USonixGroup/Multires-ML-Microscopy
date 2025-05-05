@@ -51,3 +51,26 @@ xlim([0 max(x)])
 
 
 fontsize(16,"points")
+
+
+
+%%
+plot(vertcat(info.TrainingLoss))
+hold on
+set(gcf, "color", [1 1 1])
+
+hold on
+plot(movmean(vertcat(info.TrainingLoss), 100), LineWidth=3 )
+
+legend('Loss', 'Validation Loss', Interpreter='latex')
+grid on
+
+box on
+xlabel('Iteration', Interpreter='latex')
+ylabel('Loss', Interpreter='latex')
+fontname("CMU Serif")
+fontsize(16, "points")
+
+%title("ResNet50: First Training Run", Interpreter='latex')
+ylim([0 4])
+%fontsize(24,"points")

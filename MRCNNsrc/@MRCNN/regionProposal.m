@@ -63,7 +63,7 @@ for i = 1:N
     % We don't need to trace the NMS operation for dlarray
     [~, ~, index] = selectStrongestBbox(extractdata(bboxes), extractdata(scores), ...
         'RatioType', 'Union', ...
-        'OverlapThreshold', obj.OverlapThreshold,...
+        'OverlapThreshold', obj.OverlapThresholdRPN,...
         'NumStrongest', obj.NumStrongestRegions);
 
     bboxes = bboxes(index,:);
@@ -78,7 +78,8 @@ end
 proposals = single(vertcat(proposals{:}));
             
 if(isempty(proposals))
-    warning('Empty Proposals. Skipping training step');
+    warning('Empty Proposals. Using single dummy proposal');
+    proposals = dlarray([100 20 120 40 1], 'SSCB');
 end
 
 % convert to 5XM format

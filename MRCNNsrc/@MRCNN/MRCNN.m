@@ -43,7 +43,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
     end
 
     % ROI Pooling properties
-    properties(SetAccess=public, GetAccess = ?tMRCNN)
+    properties(SetAccess=public, GetAccess = public)
         PoolSize = [14 14];
         MaskPoolSize = [14 14];
     end
@@ -58,7 +58,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
 
         MinScore = 0;
         
-        OverlapThreshold = 0.5
+        OverlapThresholdRPN = 0.5
 
         NumStrongestRegionsBeforeProposalNMS = 6000
         NumStrongestRegions = 1000
@@ -327,9 +327,9 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             dlProposals = regionProposal(obj, dlRPNReg, dlRPNScores);
             
             dlPooled = roiAlignPooling(obj, dlFeatures, dlProposals, obj.PoolSize);
-    
+            
             dlFinalFeatures = predict(obj.PostPoolFeatureExtractionNet, dlPooled, dlPooled, 'Acceleration','auto');
-    
+            
             [dlBoxReg, dlBoxScores] = predict(obj.DetectionHeads, dlFinalFeatures, 'Acceleration','auto', 'Outputs',{'detectorRegOut', 'detectorClassOut'});
             
             outputFeatures{1} = dlProposals;
@@ -654,7 +654,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
         
     end
     
-    methods(Static, Hidden)
+    methods(Static, Access=public)
         function this = loadobj(s)
             try
                 vision.internal.requiresNeuralToolbox(mfilename);

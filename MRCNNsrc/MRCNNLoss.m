@@ -130,7 +130,7 @@ classdef MRCNNLoss < images.dltrain.internal.Loss
 
         LossRPN = LossRPNClass + LossRPNReg;
         %Double RPN loss if there are no positive proposals (adjusted for minibatch average)
-        LossRPN = LossRPN * (2 - nnz(numPos)/length(numPos)); 
+        %LossRPN = LossRPN * (2 - nnz(numPos)/length(numPos)); 
 
         
         % Total Loss
