@@ -58,7 +58,7 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
 
         MinScore = 0;
         
-        OverlapThresholdRPN = 0.5
+        OverlapThresholdRPN = 0.7
 
         NumStrongestRegionsBeforeProposalNMS = 6000
         NumStrongestRegions = 1000
