@@ -2,8 +2,9 @@ function  out = SegMATReader(filename)
 
 load(filename);
 
-% For grayscale images, simulate RGB images by repeating the intensity
-% values for all three color channels
+
+%[~, masks] = resizeImageandMask(ones([520, 704]), masks, [528, 704]);
+%bbox(:,2) = min(bbox(:,2)+4, 528); %will imlpement into resize function later, see bug report
 
 
 out{1} = masks;

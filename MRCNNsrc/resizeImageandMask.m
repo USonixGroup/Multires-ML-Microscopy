@@ -18,5 +18,9 @@ imageOut(c1, c2, :) = imageIn; %pad equally from all sides
 
 
 %%
+if ~isempty(maskIn)
 maskOut = zeros(paddedH,paddedW,size(maskIn, 3), 'like', maskIn);
 maskOut(c1, c2, :) = maskIn; %pad equally from all sides
+else
+    maskOut = [];
+end
