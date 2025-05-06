@@ -1,5 +1,6 @@
 function net = createEfficientNetDownsamplingTail()
     % EfficientNet-style downsampling tail block with residual connection
+    % Now enhanced with Squeeze-and-Excitation (SE) block
     % Input: 14x14x1024 → Output: 7x7x2048
 
     lgraph = layerGraph();
@@ -7,8 +8,9 @@ function net = createEfficientNetDownsamplingTail()
     blockName = 'tail_block';
     inChannels = 1024;
     outChannels = 2048;
-    expansion = 6;
+    expansion = 2;
     expanded = inChannels * expansion;
+    seRatio = 0.25;  % Added SE ratio parameter
 
     % Calculate numGroups for GroupNorm
     numGroupsExpanded = min(floor(expanded / 32), 32);
@@ -34,17 +36,31 @@ function net = createEfficientNetDownsamplingTail()
         groupNormalizationLayer(numGroupsExpanded, 'Name', [blockName '_gn1'])
         swishLayer('Name', [blockName '_swish1'])
 
-        groupedConvolution2dLayer(3, expanded, expanded, 'Stride', 2, ...
+        groupedConvolution2dLayer(3, 1, expanded, 'Stride', 2, ...
             'Padding', 'same', 'Name', [blockName '_depthwise_conv'])
         groupNormalizationLayer(numGroupsExpanded, 'Name', [blockName '_gn2'])
         swishLayer('Name', [blockName '_swish2'])
+    ];
+    lgraph = addLayers(lgraph, mainLayers);
+    lgraph = connectLayers(lgraph, 'input', [blockName '_expand_conv']);
 
+    %% Add Squeeze-and-Excitation block after depthwise conv
+    if seRatio > 0
+        [lgraph, seOutName] = addSqueezeExcitationBlock(lgraph, [blockName '_swish2'], expanded, seRatio, blockName);
+        lastLayerAfterSE = seOutName;
+    else
+        lastLayerAfterSE = [blockName '_swish2'];
+    end
+
+    %% Project path (1x1 conv)
+    projectLayers = [
         convolution2dLayer(1, outChannels, 'Stride', 1, 'Padding', 'same', ...
             'Name', [blockName '_project_conv'], ...
             'BiasLearnRateFactor', 0, 'BiasInitializer', 'zeros')
         groupNormalizationLayer(numGroupsOut, 'Name', [blockName '_gn3'])
     ];
-    lgraph = addLayers(lgraph, mainLayers);
+    lgraph = addLayers(lgraph, projectLayers);
+    lgraph = connectLayers(lgraph, lastLayerAfterSE, [blockName '_project_conv']);
 
     %% Shortcut projection path
     shortcutLayers = [
@@ -54,6 +70,7 @@ function net = createEfficientNetDownsamplingTail()
         groupNormalizationLayer(numGroupsOut, 'Name', [blockName '_shortcut_gn'])
     ];
     lgraph = addLayers(lgraph, shortcutLayers);
+    lgraph = connectLayers(lgraph, 'input', [blockName '_shortcut_conv']);
 
     %% Addition + final Swish activation
     addition = additionLayer(2, 'Name', [blockName '_add']);
@@ -61,106 +78,72 @@ function net = createEfficientNetDownsamplingTail()
     lgraph = addLayers(lgraph, [addition, finalSwish]);
 
     %% Connections
-    % Connect input to both paths
-    lgraph = connectLayers(lgraph, 'input', [blockName '_expand_conv']);
-    lgraph = connectLayers(lgraph, 'input', [blockName '_shortcut_conv']);
-
     % Connect main path
     lgraph = connectLayers(lgraph, [blockName '_gn3'], [blockName '_add/in1']);
 
     % Connect shortcut path
     lgraph = connectLayers(lgraph, [blockName '_shortcut_gn'], [blockName '_add/in2']);
 
-    % Swish after addition (auto-connected if added as a sequence)
-    % So no need to connect addition → swish manually
-
     %% Final dlnetwork
-exampleInput = dlarray(zeros(14, 14, 1024, 1), 'SSCB');
-net = dlnetwork(lgraph, 'Initialize', true);
+    exampleInput = dlarray(zeros(14, 14, 1024, 1), 'SSCB');
+    net = dlnetwork(lgraph, 'Initialize', true);
 end
 
-
-
-
-
-function [lgraph, lastLayerName] = addFusedMBConvBlock(lgraph, inputName, channels, stride, expansion, blockName)
-    % Fused MBConv block implementation with GroupNorm
-    expanded = channels * expansion;
+function [lgraph, outputName] = addSqueezeExcitationBlock(lgraph, inputName, channels, seRatio, blockName)
+    % Add a Squeeze-and-Excitation block
+    % seRatio determines the reduction ratio for the bottleneck
     
-    layers = [
-        convolution2dLayer(3, expanded, 'Stride', stride, 'Padding', 'same', ...
-            'Name', [blockName '_fused_conv'])
-        groupNormalizationLayer(calculateNumGroups(expanded), 'Name', [blockName '_gn1'])
-        swishLayer('Name', [blockName '_swish1'])
-    ];
+    % Calculate the number of bottleneck channels
+    bottleneckChannels = max(1, floor(channels * seRatio));
     
-    if expanded ~= channels
-        layers = [layers
-            convolution2dLayer(1, channels, 'Stride', 1, 'Padding', 'same', ...
-                'Name', [blockName '_project_conv'])
-            groupNormalizationLayer(calculateNumGroups(channels), 'Name', [blockName '_gn2'])
-        ];
-    end
+    % Create a custom SE block using MATLAB's layers with proper reshaping
+    % for compatibility with spatial features
     
-    lgraph = addLayers(lgraph, layers);
-    lgraph = connectLayers(lgraph, inputName, [blockName '_fused_conv']);
+    % 1. Global Average Pooling to get channel statistics
+    poolLayer = globalAveragePooling2dLayer('Name', [blockName '_se_pool']);
     
-    lastLayerName = layers(end).Name;
+    % 2. Fully connected layers for channel attention
+    fc1 = convolution2dLayer(1, bottleneckChannels, 'Name', [blockName '_se_fc1']);
+    swish1 = swishLayer('Name', [blockName '_se_swish']);
+    fc2 = convolution2dLayer(1, channels, 'Name', [blockName '_se_fc2']);
+    sigmoid1 = sigmoidLayer('Name', [blockName '_se_sigmoid']);
     
-    % Add residual connection if possible
-    if stride == 1 && strcmp(inputName, 'stem_swish') == 0
-        lgraph = addLayers(lgraph, additionLayer(2, 'Name', [blockName '_add']));
-        lgraph = connectLayers(lgraph, inputName, [blockName '_add/in1']);
-        lgraph = connectLayers(lgraph, lastLayerName, [blockName '_add/in2']);
-        lastLayerName = [blockName '_add'];
-    end
+    % 3. Custom function layer to reshape and apply weights to input feature map
+    seApplyLayer = functionLayer(@(x, weights) applyChannelAttention(x, weights), ...
+                                'Name', [blockName '_se_apply'], ...
+                                'NumInputs', 2);
+    
+    % Add all layers to graph
+    lgraph = addLayers(lgraph, poolLayer);
+    lgraph = connectLayers(lgraph, inputName, poolLayer.Name);
+    
+    lgraph = addLayers(lgraph, fc1);
+    lgraph = connectLayers(lgraph, poolLayer.Name, fc1.Name);
+    
+    lgraph = addLayers(lgraph, swish1);
+    lgraph = connectLayers(lgraph, fc1.Name, swish1.Name);
+    
+    lgraph = addLayers(lgraph, fc2);
+    lgraph = connectLayers(lgraph, swish1.Name, fc2.Name);
+    
+    lgraph = addLayers(lgraph, sigmoid1);
+    lgraph = connectLayers(lgraph, fc2.Name, sigmoid1.Name);
+    
+    lgraph = addLayers(lgraph, seApplyLayer);
+    lgraph = connectLayers(lgraph, sigmoid1.Name, [blockName '_se_apply/in1']);
+    lgraph = connectLayers(lgraph, inputName, [blockName '_se_apply/in2']);
+    
+    outputName = [blockName '_se_apply'];
 end
 
-function [lgraph, lastLayerName] = addMBConvBlock(lgraph, inputName, channels, stride, expansion, blockName)
-    % MBConv block implementation with GroupNorm
-    expanded = channels * expansion;
+function output = applyChannelAttention(weights, featureMap)
+    % This function applies channel attention weights to the input feature map
+    % weights: output from sigmoid (batch_size x num_channels)
+    % featureMap: input feature map (height x width x channels x batch_size)
     
-    layers = [
-        convolution2dLayer(1, expanded, 'Stride', 1, 'Padding', 'same', ...
-            'Name', [blockName '_expand_conv'])
-        groupNormalizationLayer(calculateNumGroups(expanded), 'Name', [blockName '_gn1'])
-        swishLayer('Name', [blockName '_swish1'])
-        
-        groupedConvolution2dLayer(3, expanded, expanded, 'Stride', stride, ...
-            'Padding', 'same', 'Name', [blockName '_depthwise_conv'])
-        groupNormalizationLayer(calculateNumGroups(expanded), 'Name', [blockName '_gn2'])
-        swishLayer('Name', [blockName '_swish2'])
-        
-        convolution2dLayer(1, channels, 'Stride', 1, 'Padding', 'same', ...
-            'Name', [blockName '_project_conv'])
-        groupNormalizationLayer(calculateNumGroups(channels), 'Name', [blockName '_gn3'])
-    ];
+    % Get dimensions
+    [h, w, c, n] = size(featureMap);
     
-    lgraph = addLayers(lgraph, layers);
-    lgraph = connectLayers(lgraph, inputName, [blockName '_expand_conv']);
-    
-    lastLayerName = layers(end).Name;
-    
-    % Add residual connection if possible
-    if stride == 1 && strcmp(inputName, 'stem_swish') == 0
-        lgraph = addLayers(lgraph, additionLayer(2, 'Name', [blockName '_add']));
-        lgraph = connectLayers(lgraph, inputName, [blockName '_add/in1']);
-        lgraph = connectLayers(lgraph, lastLayerName, [blockName '_add/in2']);
-        lastLayerName = [blockName '_add'];
-    end
-end
-
-function numGroups = calculateNumGroups(numChannels)
-    % Calculate number of groups based on requirements:
-    % - Minimum 32 channels per group
-    % - Maximum 32 groups
-    numGroups = min(floor(numChannels / 32), 32);
-    
-    % Ensure at least 1 group
-    numGroups = max(numGroups, 1);
-    
-    % Ensure numChannels is divisible by numGroups
-    while mod(numChannels, numGroups) ~= 0 && numGroups > 1
-        numGroups = numGroups - 1;
-    end
+    % Apply attention via multiplication
+    output = featureMap .* weights;
 end
