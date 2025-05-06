@@ -1,4 +1,4 @@
-function extractedTable = ExtractFeatures(image, masks, boundingBoxes, pixeltoLengthRatio, scores)
+function extractedTable = ExtractFeatures(image, masks, boundingBoxes, scores, pixeltoLengthRatio)
 
 % Bugs
 % some proposals result in different data types, potentially related
@@ -22,8 +22,8 @@ arguments
     image % Input image
     masks % Binary masks for segmented cells
     boundingBoxes % Bounding boxes for each cell
-    pixeltoLengthRatio (1,1) {mustBePositive} = 1; % Conversion factor from pixels to length
     scores = []; % Scores input from CNN
+    pixeltoLengthRatio (1,1) {mustBePositive} = 1; % Conversion factor from pixels to length
 end
 
 % Normalise image if it is of type uint8
@@ -58,21 +58,19 @@ for i = 1:numCells
     % Compute region properties: Eccentricity, Circularity, Solidity
     ShapeProps(i,:) = regionprops(masks(:,:,i), "Eccentricity", "Circularity", "Solidity");
     
-    % Extract bounding box features
-    BoundingBoxX(i) = boundingBoxes(i,1); % X position
-    BoundingBoxY(i) = boundingBoxes(i,2); % Y position
-    BoundingBoxWidth(i) = boundingBoxes(i,3); % Width
-    BoundingBoxHeight(i) = boundingBoxes(i,4); % Height
 
-    % Save the confidence scores for each cell (from CNN output)
-    scoresCells(i,1) = scores; % To be amended once scores input from CNN is added
+
 end
 
 % Convert structures to tables
 ShapeProps = struct2table(ShapeProps);
 Perimeter = table(Perimeter);
-BoundingBoxTable = table(BoundingBoxX, BoundingBoxY, BoundingBoxWidth, BoundingBoxHeight);
-ScoresTable = table(scoresCells);
+BoundingBoxTable = table(boundingBoxes(:,1),boundingBoxes(:,2),boundingBoxes(:,3),boundingBoxes(:,4),'VariableNames', ["Bounding Box X", "Bounding Box Y", "Bounding Box Width", "Bounding Box Height"] );
+if size(scores,1)==size(boundingBoxes,1)
+ScoresTable = table(scores);
+else
+ScoresTable = table(zeros(size(boundingBoxes,1), 1));
+end
 
 % Convert diameters to micrometers (but not coordinates in the image)
 FeretDiameter{:,1} = FeretDiameter{:,1} * pixeltoLengthRatio;
@@ -94,7 +92,7 @@ AspectRatio.Properties.VariableNames = "Aspect Ratio";
 IntensityDistStats.Properties.VariableNames = ["Standard Deviation", "Skewness", "Kurtosis"];
 
 % Renaming BoundingBoxTable variable names
-BoundingBoxTable.Properties.VariableNames = ["Bounding Box X", "Bounding Box Y", "Bounding Box Width", "Bounding Box Height"];
+%BoundingBoxTable.Properties.VariableNames = ["Bounding Box X", "Bounding Box Y", "Bounding Box Width", "Bounding Box Height"];
 
 % Renaming ScoresTable variable names
 ScoresTable.Properties.VariableNames = ["Scores"];
