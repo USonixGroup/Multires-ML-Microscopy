@@ -201,9 +201,8 @@ function [lgraph, outputName] = addSqueezeExcitationBlock(lgraph, inputName, cha
     sigmoid1 = sigmoidLayer('Name', [blockName '_se_sigmoid']);
     
     % 3. Custom function layer to reshape and apply weights to input feature map
-    seApplyLayer = functionLayer(@(x, weights) applyChannelAttention(x, weights), ...
-                                'Name', [blockName '_se_apply'], ...
-                                'NumInputs', 2);
+    seApplyLayer = multiplicationLayer(2, ...
+                                'Name', [blockName '_se_apply']);
     
     % Add all layers to graph
     lgraph = addLayers(lgraph, poolLayer);
@@ -234,7 +233,7 @@ function output = applyChannelAttention(weights, featureMap)
     % featureMap: input feature map (height x width x channels x batch_size)
     
     % Get dimensions
-    [h, w, c, n] = size(featureMap);
+    %[h, w, c, n] = size(featureMap);
     
     % Reshape weights for broadcasting with feature map
 

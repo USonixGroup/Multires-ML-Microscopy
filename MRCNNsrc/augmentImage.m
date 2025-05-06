@@ -2,12 +2,12 @@ function [im, masks, labels, bbox] = augmentImage(im, masks, labels, bbox)
 
 randNums = rand([1 6],"single"); %generate random numbers for augmentation, more efficient to do so in one step
 
-if randNums(1)<0.2 %horizontal flip with 20% probability
+if randNums(1)<0.5 %horizontal flip with 50% probability
     im = im(end:-1:1, :);
     masks = masks(end:-1:1, :, :);
 end
 
-if randNums(2)<0.2 %vertical flip with 20% probability
+if randNums(2)<0.5 %vertical flip with 50% probability
     im = im(:, end:-1:1);
     masks = masks(:, end:-1:1, :);
 end

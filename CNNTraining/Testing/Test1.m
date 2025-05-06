@@ -47,9 +47,13 @@ options = trainingOptions("adam", ...
 load("SingleDS/label_A172_Phase_A7_1_00d00h00m_2.tif.mat", "im")
 im=rescale(im);
 im=repmat(im ,[1 1 1]); 
+
+
 [im, ~] = resizeImageandMask(im, [], [528, 704]);
+%%
+im2 = augmentImage(im, masks,   label,  bbox);
 
-
+imshow(im2);
 %%
 net.OverlapThresholdRPN = 0.3;
 net.OverlapThresholdPrediction = 0.3;
