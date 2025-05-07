@@ -4,7 +4,7 @@ function im = DWT_Denoise(im, Options)
         im
         Options.Wavelet char = 'db5' % default value
         Options.Level (1,1) {mustBeInteger, mustBeReal} = 4 % default value
-        Options.Threshold {mustBeGreaterThanOrEqual(Options.Threshold, 0), mustBeLessThan(Options.Threshold, 1), mustBeReal(Options.Threshold)}= 0.1; % default value
+        Options.Threshold {mustBeGreaterThanOrEqual(Options.Threshold, 0), mustBeLessThan(Options.Threshold, 1), mustBeReal(Options.Threshold)}= 0.02; % default value
     end
 
     Options.Threshold = iValidateThresholdLength(Options.Threshold, Options.Level);

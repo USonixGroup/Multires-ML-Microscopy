@@ -16,4 +16,30 @@ grid on
 
 %%
 
+plot(50:5:95, kk*100, LineWidth=3,Color='k')
+xlabel('IoU Threshold', Interpreter='latex')
+ylabel('Average Precision at Threshold (\%)', Interpreter='latex')
+yline(mean(kk)*100, LineWidth=2, LineStyle="--",Color=[0.1 0.1 0.1])
+text(52, mean(kk)*100+3, '$\mathrm{AP_{av}}=39.1\%$', Interpreter='latex')
+title('EfficientNet AP IoU Threshold', Interpreter='latex')
 
+fontname("CMU Serif")
+fontsize(16, "points")
+box on
+grid on
+
+%%
+plot([0, 1:2:50], wnoise./wnoise(1)*100, LineWidth=2)
+hold on
+plot([0, 1:2:50], (wonoise./wonoise(1));
+%plot([0, 1:2:50], (wonoise+0.2-[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0.5 0.8 1 1 1 1 1 1 1 1 1]'*0.2)./(wonoise(1)+0.2)*100, LineWidth=2)
+xlim([0 50])
+
+ylabel('Precision Compared to Baseline (\%)', Interpreter='latex')
+xlabel('$\sigma$', Interpreter='latex')
+legend('Without Pre-processing', 'With Pre-processing')
+
+fontname("CMU Serif")
+fontsize(16, "points")
+box on
+grid on

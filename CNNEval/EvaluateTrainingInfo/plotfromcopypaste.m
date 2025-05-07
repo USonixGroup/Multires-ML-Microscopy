@@ -1,20 +1,26 @@
-a =MatlabImportToolpaste2323376023618150602tmp;
-
+a =MatlabImportToolpaste13882179130443424212tmp;
 
 %%
-plot(a.VarName2./3188*2, a.VarName6)
+a = a(~isnan(a(:,1)),:);
+%%
+a=horzcat([1:22340]', a);
+%%
+close all
+plot(a(:,1)./(length(a)/34), a(:,2))
 hold on
-plot(a.VarName2./3188*2, movmean(a.VarName6,750), LineWidth=3)
+plot(a(:,1)./(length(a)/34), movmean(a(:,2),250), LineWidth=3)
+%vald = ~isnan(a(:,1));
 
-vald = ~isnan(a.VarName11);
+%plot(a.VarName2(vald)./3188*2, a.VarName11(vald)-0.5, LineWidth=3)                                     %plot([4:2:34], [6.871, 4.3123, 2.843, 1.920174, 1.763, 1.6695, 1.732, 1.602981, 1.592483, 1.5234890, 1.452, 1.396 1.37 1.2023 1.19745, 1.18], LineWidth=3)
+xregion(0,4)
 
-%plot(a.VarName2(vald)./3188*2, a.VarName11(vald)-0.5, LineWidth=3)
-plot([0:9], [2.871, 1.543, 1.263, 0.6695, 0.632 0.652 0.5796 0.52 0.499 0.4991], LineWidth=3)
-legend('Training Loss', '750 Iterations Moving Average', 'Validation Loss', Interpreter='latex')
+legend('Training Loss', '250 Iterations Moving Average', 'Validation Loss', 'Warmup period', Interpreter='latex')
 xlabel('Epoch', Interpreter='latex')
 ylabel('Loss', Interpreter='latex')
 fontname('CMU Serif')
 fontsize(16, 'points')
+xlim([0 34])
+ylim([0 3])
 
 box on
 grid on

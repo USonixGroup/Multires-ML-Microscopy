@@ -50,14 +50,11 @@ im=repmat(im ,[1 1 1]);
 
 
 [im, ~] = resizeImageandMask(im, [], [528, 704]);
-%%
-im2 = augmentImage(im, masks,   label,  bbox);
 
-imshow(im2);
 %%
 net.OverlapThresholdRPN = 0.3;
 net.OverlapThresholdPrediction = 0.3;
-net.ScoreThreshold=0.5;
+net.ScoreThreshold=0.0001;
 
 %%
 im=rand([520 704]);
@@ -68,7 +65,7 @@ tic
 % 
 %net.ProposalsOutsideImage='clip';
 %net.MinScore = 0.001;
-     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.5,NumStrongestRegions=1000, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
+     [masks,labels,scores,boxes] = segmentObjects(net,im,Threshold=0.1,NumStrongestRegions=Inf, SelectStrongest=true, MinSize=[1 1],MaxSize=[80 80] );
 toc
 
 %scores = 1./(1+exp(-scores));
