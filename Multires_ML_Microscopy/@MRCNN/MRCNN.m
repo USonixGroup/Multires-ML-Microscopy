@@ -156,15 +156,15 @@ classdef MRCNN < deep.internal.sdk.LearnableParameterContainer
             % Load pre-trained network
             dir = which('MRCNN'); %find and load network from path of all files
             dir = dir(1:end-14);
-            data = load([dir+"/NetData/"+options.ModelName+"/dlnetPostFeature.mat"] );
+            data = load([dir+"/@MRCNN/NetData/"+options.ModelName+"/dlnetPostFeature.mat"] );
             obj.PostPoolFeatureExtractionNet = data.dlnetPostFeature;
-            data = load([dir+"/NetData/"+options.ModelName+"/dlnetFeature.mat"] );
+            data = load([dir+"/@MRCNN/NetData/"+options.ModelName+"/dlnetFeature.mat"] );
             obj.FeatureExtractionNet = data.dlnetFeature;
-            data = load([dir+"/NetData/"+options.ModelName+"/dlnetRPN.mat"] );
+            data = load([dir+"/@MRCNN/NetData/"+options.ModelName+"/dlnetRPN.mat"] );
             obj.RegionProposalNet = data.dlnetRPN;
-            data = load([dir+"/NetData/"+options.ModelName+"/dlnetDetectHead.mat"] );
+            data = load([dir+"/@MRCNN/NetData/"+options.ModelName+"/dlnetDetectHead.mat"] );
             obj.DetectionHeads = data.dlnetDetectHead;
-            data = load([dir+"/NetData/"+options.ModelName+"/dlnetMaskHead.mat"] );
+            data = load([dir+"/@MRCNN/NetData/"+options.ModelName+"/dlnetMaskHead.mat"] );
             obj.MaskSegmentationHead = data.dlnetMaskHead;
             
             % Customize network for new input size

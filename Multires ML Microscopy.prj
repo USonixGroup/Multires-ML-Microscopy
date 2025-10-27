@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.apptool" plugin-version="1.0">
-  <configuration build-checksum="1929215964" file="/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github/Multires ML Microscopy.prj" location="/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github" name="Multires ML Microscopy" target="target.mlapps" target-name="Package App">
+  <configuration build-checksum="587643969" file="/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github/Multires ML Microscopy.prj" location="/Users/yigit/Desktop/Stuff/Mechanical Engineering/4YP_Github" name="Multires ML Microscopy" target="target.mlapps" target-name="Package App">
     <param.appname>Multires ML Microscopy</param.appname>
     <param.authnamewatermark />
     <param.email />
@@ -12,7 +12,7 @@
     </param.icons>
     <param.summary />
     <param.description />
-    <param.screenshot>/private/var/folders/yz/yvvq7_yd353bf20hnh4j3h480000gn/T/tpa5af8dc6_396d_4b68_bbcc_13a235e19b0c.png</param.screenshot>
+    <param.screenshot>/private/var/folders/yz/yvvq7_yd353bf20hnh4j3h480000gn/T/tp4793abf4_4a6f_4073_879d_d9215d90ef87.png</param.screenshot>
     <param.version>1.0</param.version>
     <param.products.name />
     <param.products.id />
@@ -36,17 +36,100 @@
     <fileset.main>
       <file>${PROJECT_ROOT}/Multires_ML_Microscopy.mlapp</file>
     </fileset.main>
-    <fileset.depfun>
+    <fileset.depfun />
+    <fileset.resources>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/CascadeRCNN.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet/dlnetDetectHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet/dlnetFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet/dlnetMaskHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet/dlnetPostFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet/dlnetRPN.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet/dlnetRPNC.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/applyRegressionToProposals.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/regionProposal.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@CascadeRCNN/roiAlignPooling.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/MRCNN.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/EfficientNet</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/EfficientNet/dlnetDetectHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/EfficientNet/dlnetFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/EfficientNet/dlnetMaskHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/EfficientNet/dlnetPostFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/EfficientNet/dlnetRPN.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet101</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet101/dlnetDetectHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet101/dlnetFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet101/dlnetMaskHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet101/dlnetPostFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet101/dlnetRPN.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet50</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet50/dlnetDetectHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet50/dlnetFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet50/dlnetMaskHead.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet50/dlnetPostFeature.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/NetData/ResNet50/dlnetRPN.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/regionProposal.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/roiAlignPooling.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/sequentialRegionProposal.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/@MRCNN/sequentialReuseProposal.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/close.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/export.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/line.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/nextbutton.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/previousbutton.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/reset2.jpg</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/settings.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/AppImgs/stop2.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/CascadeEfficientNet.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/EfficientNet.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PostProcessandAnalysis</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PostProcessandAnalysis/ExtractFeatures.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PostProcessandAnalysis/createTracks.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PostProcessandAnalysis/segmentCells.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PreProcess</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PreProcess/DWT_Denoise.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PreProcess/assignPredictionsToAnchors.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Prediction/PreProcess/smartResize.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/ResNet101.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/ResNet50.mat</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment/CropRandom.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment/MATReader1C.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment/MATReader3C.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment/MATReaderDWT.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment/augmentImage.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/PreProcessandAugment/resizeImageandMask.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss/CascadeRCNNLoss.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss/MRCNNLoss.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss/NegativeMining.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss/RPNClassLoss.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss/trainCascadeRCNN.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/Training/TrainingandLoss/trainMRCNN.m</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/close.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/export.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/line.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/nextbutton.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/previousbutton.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/reset2.jpg</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/settings.png</file>
+      <file>${PROJECT_ROOT}/Multires_ML_Microscopy/stop2.png</file>
       <file>${PROJECT_ROOT}/close.png</file>
       <file>${PROJECT_ROOT}/export.png</file>
+      <file>${PROJECT_ROOT}/line.png</file>
       <file>${PROJECT_ROOT}/nextbutton.png</file>
       <file>${PROJECT_ROOT}/previousbutton.png</file>
       <file>${PROJECT_ROOT}/reset2.jpg</file>
       <file>${PROJECT_ROOT}/settings.png</file>
       <file>${PROJECT_ROOT}/stop2.png</file>
-    </fileset.depfun>
-    <fileset.resources>
-      <file>${PROJECT_ROOT}/MRCNNsrc</file>
     </fileset.resources>
     <fileset.package />
     <build-deliverables>

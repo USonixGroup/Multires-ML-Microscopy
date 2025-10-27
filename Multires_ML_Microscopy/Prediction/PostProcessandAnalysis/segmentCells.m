@@ -14,7 +14,7 @@ function [masks labels scores boxes] = segmentCells(net, Image, Options)
 %   boxes  - Bounding boxes in [x y width height] format
 
 arguments % Input validation and default parameter values
-    net MRCNN                                                              % Pre-trained Mask R-CNN network
+    net                                                               % Pre-trained Mask R-CNN network
     Image = [];                                                            % Input image to segment
     Options.Denoise (1,1) logical = 1;                                    % Enable/disable DWT denoising preprocessing
     Options.Wavelet char = 'db5'                                          % Wavelet type for denoising (Daubechies 5)

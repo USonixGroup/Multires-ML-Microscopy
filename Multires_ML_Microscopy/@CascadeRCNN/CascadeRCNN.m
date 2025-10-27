@@ -159,7 +159,7 @@ classdef CascadeRCNN < deep.internal.sdk.LearnableParameterContainer
             % Load pre-trained network
             dir = which('CascadeRCNN'); %find and load network from path of all files
             dir = dir(1:end-14);
-            data = load([dir+"/NetData/"+options.ModelName+"/dlnetPostFeature.mat"] );
+            data = load([dir+"//NetData/"+options.ModelName+"/dlnetPostFeature.mat"] );
             obj.PostPoolFeatureExtractionNet = data.dlnetPostFeature;
             data = load([dir+"/NetData/"+options.ModelName+"/dlnetFeature.mat"] );
             obj.FeatureExtractionNet = data.dlnetFeature;
