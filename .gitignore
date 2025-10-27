@@ -15,4 +15,3 @@
 *.asv
 ./CNNTraining/PastLives/*
 *.tar.gzip
-*.mlappinstall

@@ -13,3 +13,7 @@ Multires_ML_Microscopy/@MRCNN/NetData/ResNet50 filter=lfs diff=lfs merge=lfs -te
 Multires_ML_Microscopy/@CascadeRCNN/NetData/EfficientNet filter=lfs diff=lfs merge=lfs -text
 Multires_ML_Microscopy filter=lfs diff=lfs merge=lfs -text
 Multires_ML_Microscopy.mlappinstall filter=lfs diff=lfs merge=lfs -text
+<<<<<<< HEAD
+Multires[[:space:]]ML[[:space:]]Microscopy.mlappinstall filter=lfs diff=lfs merge=lfs -text
+=======
+>>>>>>> f5ea450a7086065ec2296387b3bbc8083f5a5561
