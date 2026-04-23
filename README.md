@@ -31,3 +31,20 @@ version = {0.1}
 ## License
 Multires-ML-Microscopy is licensed under an MIT licence.
 Copyright (c) 2025.
+
+## UPDATES: Addition of Sobel + Watershed segmentation algorithm 
+- A segmentSobelWatershed.m file was added with the Sobel and marker-controlled Watershed cell segmenter, which does NOT use Machine Learning. [Link to the standalone MATLAB code](https://github.com/rustamtoshov23/Sobel-Watershed-segmenter).
+- The app code was modified, old versions (including the installer and the .mlapp file) were deleted, a new Multires_ML_Microscopy.m file was uploaded. Updates:
+  - Sobel + Watershed input panel was added in Settings
+  - All button images now show up
+  - smartResize now takes place ONLY for visualisation. All segmentation algorithms work on full image resolution, however the final image with masks is then resized to fit into the designed Display window. When exporting results, those will be at the original image resolution as well!
+  - The code is presented in .m format, rather than .mlapp as it was previously. The only change this creates is that we lose drag-and-drop functionality if we ever want to edit the GUI in App Designer. GUI will have to be hardcoded. Nevertheless, the app works in the same exact way as it used to.
+  - Cleaned up, got rid of dead code. 
+- MATLAB Toolbox dependencies are specified (everything was run on MATLAB v25.2):
+  - Image Processing Toolbox
+  - Deep Learning Toolbox
+  - Computer Vision Toolbox
+  - Statistics and Machine Learning Toolbox
+  - Wavelet Toolbox
+  - Parallel Computing Toolbox
+- If you have any questions with regards to these modifications, please contact the developer at rustam.toshov.23@ucl.ac.uk
