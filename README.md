@@ -47,4 +47,6 @@ Copyright (c) 2025.
   - Statistics and Machine Learning Toolbox
   - Wavelet Toolbox
   - Parallel Computing Toolbox
+- Added all the raw images (Base image + 6 Fibroblast cell images + 2 Microglial cell images) to Demo Images folder. I have used these images to analyse and develop the Sobel + Watershed algorithm. To see the specific settings I used for each image, please refer to [Sobel + Watershed project's GitHub page](https://github.com/rustamtoshov23/Sobel-Watershed-segmenter).
+- **TO RUN THE APP:** you only really need the Multires_ML_Microscopy folder and the Multires_ML_Microscopy.m file. Make sure all files are downloaded from GitHub properly (it is recommended to download big MATLAB files individually), add all files to the same path in MATLAB, make sure you have downloaded all the Toolboxes listed above and then just run the Multires_ML_Microscopy.m file!
 - If you have any questions with regards to these modifications, please contact the developer at rustam.toshov.23@ucl.ac.uk
