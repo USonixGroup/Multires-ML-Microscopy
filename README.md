@@ -48,5 +48,10 @@ Copyright (c) 2025.
   - Wavelet Toolbox
   - Parallel Computing Toolbox
 - Added all the raw images (Base image (and its Ground Truth) + 6 Fibroblast cell images + 2 Microglial cell images) to Demo Images folder. I have used these images to analyse and develop the Sobel + Watershed algorithm. To see the specific settings I used for each image, please refer to [Sobel + Watershed project's GitHub page](https://github.com/rustamtoshov23/Sobel-Watershed-segmenter).
+- Added a folder called **Post-Processing**. It contains 4 little MATLAB codes (in all, files have to be loaded in manually in the code):
+  - JSON_to_TIFF.mlx &rarr; can be used to convert the output JSON segmentation mask of this app into a more useful .tiff version.
+  - Image_Character.mlx &rarr; calculates the RMS contrast (the higher the value, the higher the contrast is in the image) and Laplacian Variance of the image (the higher the value, the sharper is the image). Be careful as there is no set definitive value for a high contrast or high sharpness image. These metrics are used to compare image quality within the same dataset.
+  - Segm_Metrics.mlx &rarr; if a ground truth of an image is present, can be used to calculate the segmentation metrics: F1 score, Boundary F1 score, 95% Hausdorff Distance, ASSD.
+  - Overlay.mlx &rarr; allows the user to overlay the segmentation mask over the original image (segmentation will be overlaid in red). 
 - **TO RUN THE APP:** you only really need the Multires_ML_Microscopy folder and the Multires_ML_Microscopy.m file. Make sure all files are downloaded from GitHub properly (it is recommended to download big MATLAB files individually), add all files to the same path in MATLAB, make sure you have downloaded all the Toolboxes listed above and then just run the Multires_ML_Microscopy.m file!
 - If you have any questions with regards to these modifications, please contact the developer at rustam.toshov.23@ucl.ac.uk
