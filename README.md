@@ -54,4 +54,5 @@ Copyright (c) 2025.
   - Segm_Metrics.mlx &rarr; if a ground truth of an image is present, can be used to calculate the segmentation metrics: F1 score, Boundary F1 score, 95% Hausdorff Distance, ASSD.
   - Overlay.mlx &rarr; allows the user to overlay the segmentation mask over the original image (segmentation will be overlaid in red). 
 - **TO RUN THE APP:** you only really need the Multires_ML_Microscopy folder and the Multires_ML_Microscopy.m file. Make sure all files are downloaded from GitHub properly (it is recommended to download big MATLAB files individually), add all files to the same path in MATLAB, make sure you have downloaded all the Toolboxes listed above and then just run the Multires_ML_Microscopy.m file!
-- If you have any questions with regards to these modifications, please contact the developer at rustam.toshov.23@ucl.ac.uk
+- If you have any questions with regards to these modifications, please contact the developer at 88.rustam.toshov@gmail.com
+
