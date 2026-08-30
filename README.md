@@ -56,3 +56,79 @@ Copyright (c) 2025.
 - **TO RUN THE APP:** you only really need the Multires_ML_Microscopy folder and the Multires_ML_Microscopy.m file. Make sure all files are downloaded from GitHub properly (it is recommended to download big MATLAB files individually), add all files to the same path in MATLAB, make sure you have downloaded all the Toolboxes listed above and then just run the Multires_ML_Microscopy.m file!
 - If you have any questions with regards to these modifications, please contact the developer at 88.rustam.toshov@gmail.com
 
+
+## UPDATES: Addition of 3D Microglia Segmentation and Classification
+This update extends the Multires-ML-Microscopy application with a pipeline for the segmentation and morphological classification of microglia directly from 3D microscopy image stacks.
+
+The added workflow performs 3D image loading and calibration, preprocessing, segmentation, removal of objects touching the lateral image boundaries, soma detection, separation of potentially merged cells, extraction of 3D morphological features, and machine-learning classification.
+
+### 3D Microglia Pipeline
+
+The following MATLAB functions were added in the `Multires_ML_Microscopy/Microglia_3D` folder:
+
+- `loadMicroglia3D.m` – loads 3D TIFF/TIF and LSM microscopy image stacks and obtains voxel calibration where available.
+- `preprocessMicroglia3D.m` – performs intensity normalisation, 3D Gaussian smoothing, background estimation and background subtraction.
+- `segmentMicroglia3D.m` – performs Otsu-based hysteresis thresholding and 3D morphological reconstruction using 26-connectivity.
+- `removeXYBorderObjects3D.m` – removes partially visible objects touching the X or Y image boundaries while retaining objects touching the Z boundaries.
+- `detectMicrogliaSomas3D.m` – detects soma candidates within segmented microglial objects.
+- `separateMicroglia3D.m` – separates objects containing multiple detected somas using soma-guided 3D geodesic region growing.
+- `extractMicrogliaFeatures3D.m` – calculates morphological measurements from individual segmented microglia.
+- `classifyMicroglia3D.m` – applies the trained machine-learning classifier to the extracted morphological features.
+
+The trained classifier is provided as:
+
+- `Microglia_Classifier.mat`
+
+### Morphological Classification
+
+Nine 3D morphological measurements are used as predictor variables:
+
+1. Volume
+2. Surface area
+3. Equivalent diameter
+4. Sphericity
+5. Major axis length
+6. Intermediate axis length
+7. Minor axis length
+8. Elongation
+9. Flatness
+
+Each analysed microglial cell is classified into one of three morphological classes:
+
+- **Amoeboid**
+- **Activated**
+- **Ramified**
+
+### Integration into the Application
+
+The main `Multires_ML_Microscopy.m` application was modified to integrate the 3D microglia workflow into the existing graphical user interface.
+
+The 3D microglia functionality allows a microscopy image stack to be processed through segmentation, individual-cell analysis and morphological classification within the application. Relevant processing parameters can be adjusted through the application interface.
+
+### Demo Image
+
+A demonstration 3D microscopy stack is included at:
+
+`Demo Images/Microglia/TrialControlZip.tif`
+
+The demonstration image originates from the **3DMorph** dataset developed for 3D analysis of microglial morphology:
+
+York, E. M., LeDue, J. M., Bernier, L.-P., and MacVicar, B. A. (2018). *3DMorph Automatic Analysis of Microglial Morphology in Three Dimensions from Ex Vivo and In Vivo Imaging*. eNeuro, 5(6), ENEURO.0266-18.2018.
+
+Original 3DMorph repository:
+https://github.com/ElisaYork/3DMorph
+
+Article:
+https://doi.org/10.1523/ENEURO.0266-18.2018
+
+### Full Development Pipeline
+
+The complete standalone development repository, including the segmentation and classification pipeline, training-data preparation, classifier development, figures and results, is available here:
+
+https://github.com/maulenar/Microglia-3D-Segmentation-Classification
+
+The standalone repository contains more detailed documentation of the individual processing stages and machine-learning workflow.
+
+### Contact
+
+For questions regarding the 3D microglia segmentation and classification extension, please contact the developer at maulen.a0602@gmail.com.
