@@ -1,4 +1,3 @@
-*.mat
 *.png
 *.csv
 *.jpg
@@ -15,3 +14,6 @@
 *.asv
 ./CNNTraining/PastLives/*
 *.tar.gzip
+Demo Images/.DS_Store
+Multires_ML_Microscopy/.DS_Store
+!Demo Images/Microglia/TrialControlZip.tif

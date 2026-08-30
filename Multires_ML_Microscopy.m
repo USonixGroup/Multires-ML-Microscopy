@@ -8,20 +8,32 @@
 %   - Wavelet Toolbox
 %   - Parallel Computing Toolbox
 %
+% External dependencies:
+%   - Bio-Formats for MATLAB       : Required for loading LSM image stacks
+%
 % External function dependencies (must be on the MATLAB path):
-%   - segmentCells.m            : ML-based cell segmentation for single/multi-image input
-%   - segmentFrame.m            : Single-frame segmentation with temporal tracking state
-%   - segmentSobelWatershed.m   : Classical Sobel edge + Watershed segmentation
-%   - createTracks.m            : IoU-based cell tracking across image sequences
-%   - ExtractFeatures.m         : Morphological and intensity feature extraction per cell
+%   - segmentCells.m               : ML-based cell segmentation for single/multi-image input
+%   - segmentFrame.m               : Single-frame segmentation with temporal tracking state
+%   - segmentSobelWatershed.m      : Classical Sobel edge + Watershed segmentation
+%   - createTracks.m               : IoU-based cell tracking across image sequences
+%   - ExtractFeatures.m            : Morphological and intensity feature extraction per cell
+%   - loadMicroglia3D.m            : Load 3D TIFF and LSM microscopy stacks
+%   - preprocessMicroglia3D.m      : Preprocess 3D microglia image stacks
+%   - segmentMicroglia3D.m         : Segment microglia in 3D image stacks
+%   - removeXYBorderObjects3D.m    : Remove objects touching lateral image borders
+%   - detectMicrogliaSomas3D.m     : Detect soma regions within segmented cells
+%   - separateMicroglia3D.m        : Separate possible merged microglia
+%   - extractMicrogliaFeatures3D.m : Extract 3D morphological features
+%   - classifyMicroglia3D.m        : Classify microglia morphology
 %
-% Required network files (must be in the working directory or on the MATLAB path):
-%   - EfficientNet.mat          : Default Mask R-CNN network, loaded on startup
-%   - ResNet50.mat              : Optional alternative network
-%   - ResNet101.mat             : Optional alternative network
-%   - CascadeEfficientNet.mat   : Optional alternative network
+% Required model files (must be in the working directory or on the MATLAB path):
+%   - EfficientNet.mat             : Default Mask R-CNN network, loaded on startup
+%   - ResNet50.mat                 : Optional alternative network
+%   - ResNet101.mat                : Optional alternative network
+%   - CascadeEfficientNet.mat      : Optional alternative network
+%   - Microglia_Classifier.mat     : Trained microglia morphology classifier
 %
-% Tested on MATLAB R2025b (version 25.2)
+% Tested on MATLAB R2026a Update 4 (version 26.1)
 
 classdef Multires_ML_Microscopy < matlab.apps.AppBase
 
@@ -122,6 +134,35 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
         SW_DiskSizeField          matlab.ui.control.DropDown
         SW_PolarityLabel          matlab.ui.control.Label
         SW_PolarityDropDown       matlab.ui.control.DropDown
+
+        % Microglia3D main-window controls
+        StackSliceLabel            matlab.ui.control.Label
+        StackSliceSlider           matlab.ui.control.Slider
+        MIPButton                  matlab.ui.control.Button
+        SegmentedSliceLabel        matlab.ui.control.Label
+        SegmentedSliceSlider       matlab.ui.control.Slider
+        SegmentedMIPButton         matlab.ui.control.Button
+        Show2DButton               matlab.ui.control.Button
+        Show3DButton               matlab.ui.control.Button
+        Classify3DButton           matlab.ui.control.Button
+
+        % Microglia3D settings controls
+        MG3D_Panel                 matlab.ui.container.Panel
+        MG3D_TitleLabel            matlab.ui.control.Label
+        MG3D_XVoxelLabel           matlab.ui.control.Label
+        MG3D_XVoxelField           matlab.ui.control.NumericEditField
+        MG3D_YVoxelLabel           matlab.ui.control.Label
+        MG3D_YVoxelField           matlab.ui.control.NumericEditField
+        MG3D_ZVoxelLabel           matlab.ui.control.Label
+        MG3D_ZVoxelField           matlab.ui.control.NumericEditField
+        MG3D_LowThresholdLabel     matlab.ui.control.Label
+        MG3D_LowThresholdField     matlab.ui.control.NumericEditField
+        MG3D_HighThresholdLabel    matlab.ui.control.Label
+        MG3D_HighThresholdField    matlab.ui.control.NumericEditField
+        MG3D_MinVolumeLabel        matlab.ui.control.Label
+        MG3D_MinVolumeField        matlab.ui.control.NumericEditField
+        MG3D_MinSomaLabel          matlab.ui.control.Label
+        MG3D_MinSomaField          matlab.ui.control.NumericEditField
     end
 
     properties (Access = private)
@@ -145,6 +186,17 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
         AggregateAnalysis table = [];
         Tracks struct = [];
         CancelRequested logical = false; % Set by PauseButton to stop the segmentation loop cleanly
+
+        % Microglia3D data
+        Microglia3DFilename string = ""
+        Microglia3DImage = []
+        Microglia3DLabelVolume = []
+        Microglia3DSomaMask = []
+        Microglia3DMetadataX double = NaN
+        Microglia3DMetadataY double = NaN
+        Microglia3DMetadataZ double = NaN
+        Microglia3DFeatures table = table()
+        Microglia3DClassified table = table()
     end
 
     methods (Access = private)
@@ -239,9 +291,10 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
         % Show/hide the Sobel+Watershed parameter panel and the
         % ML-specific controls depending on the selected algorithm.
         function updateAlgorithmControls(app)
+            % Show the controls required by the selected segmentation method.
             isSW = strcmp(app.DropDown.Value, 'Sobel+Watershed');
+            isMG3D = strcmp(app.DropDown.Value, 'Microglia3D');
 
-            % Sobel+Watershed parameter panel
             if isSW
                 app.SW_Panel.Visible = 'on';
             else
@@ -249,11 +302,10 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             end
 
             mlVisibility = 'on';
-            if isSW
+            if isSW || isMG3D
                 mlVisibility = 'off';
             end
 
-            % All controls that are meaningless or actively harmful for SW
             mlControls = { ...
                 app.PreProcessingLabel, ...
                 app.DenoiseSwitch, ...
@@ -268,16 +320,369 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
                 app.PresetLabel, app.DefaultButton, app.ConservativeButton, app.RelaxedButton, ...
                 app.TrackingLabel_2, app.TrackingOption ...
             };
+
             for c = mlControls
                 ctrl = c{1};
                 ctrl.Visible = mlVisibility;
             end
+
+            if isMG3D
+                app.MG3D_Panel.Visible = 'on';
+            else
+                app.MG3D_Panel.Visible = 'off';
+
+                % Restore the standard 2D layout.
+                app.HistogramAxes.Position = [457 72 361 267];
+                
+                app.HistogramAxes.Box = 'on';
+                app.HistogramAxes.Color = [1 1 1];
+                app.HistogramAxes.XColor = [0.15 0.15 0.15];
+                app.HistogramAxes.YColor = [0.15 0.15 0.15];
+                app.ProgressBarAxes.Position = [38 395 397 37];
+                app.StackSliceLabel.Visible = 'off';
+                app.StackSliceSlider.Visible = 'off';
+                app.MIPButton.Visible = 'off';
+                app.SegmentedSliceLabel.Visible = 'off';
+                app.SegmentedSliceSlider.Visible = 'off';
+                app.SegmentedMIPButton.Visible = 'off';
+                app.Show2DButton.Visible = 'off';
+                app.Show3DButton.Visible = 'off';
+                app.Classify3DButton.Visible = 'off';
+            end
+        end
+
+        function updateMicrogliaVoxelFields(app)
+            % Lock voxel sizes read from metadata and leave missing values editable.
+            metadataValues = [ ...
+                app.Microglia3DMetadataX, ...
+                app.Microglia3DMetadataY, ...
+                app.Microglia3DMetadataZ];
+
+            fields = { ...
+                app.MG3D_XVoxelField, ...
+                app.MG3D_YVoxelField, ...
+                app.MG3D_ZVoxelField};
+
+            axisNames = {'X','Y','Z'};
+
+            for k = 1:3
+                if isfinite(metadataValues(k)) && metadataValues(k) > 0
+                    fields{k}.Value = metadataValues(k);
+                    fields{k}.Editable = 'off';
+                    fields{k}.Tooltip = {sprintf( ...
+                        '%s voxel size was read from image metadata and cannot be changed.', ...
+                        axisNames{k})};
+                else
+                    fields{k}.Value = 0;
+                    fields{k}.Editable = 'on';
+                    fields{k}.Tooltip = {sprintf( ...
+                        '%s voxel size was not found in image metadata. Enter it in micrometres.', ...
+                        axisNames{k})};
+                end
+            end
+        end
+
+        function displayMicrogliaSlice(app, sliceNumber)
+            if isempty(app.Microglia3DImage)
+                return;
+            end
+
+            numberOfSlices = size(app.Microglia3DImage, 3);
+            sliceNumber = max(1, min(numberOfSlices, round(sliceNumber)));
+
+            app.StackSliceSlider.Value = sliceNumber;
+
+            currentSlice = mat2gray( ...
+                app.Microglia3DImage(:,:,sliceNumber));
+
+            IMGDisplay(app, currentSlice, app.ImageDisp);
+
+            app.StackSliceLabel.Text = sprintf( ...
+                'Z %d/%d', sliceNumber, numberOfSlices);
+        end
+
+        function displaySegmentedMicrogliaSlice(app, sliceNumber)
+            if isempty(app.Microglia3DLabelVolume) || isempty(app.Microglia3DImage)
+                return;
+            end
+
+            numberOfSlices = size(app.Microglia3DLabelVolume, 3);
+            sliceNumber = max(1, min(numberOfSlices, round(sliceNumber)));
+
+            app.SegmentedSliceSlider.Value = sliceNumber;
+
+            originalSlice = mat2gray( ...
+                app.Microglia3DImage(:,:,sliceNumber));
+
+            rgbImage = repmat( ...
+                im2uint8(originalSlice), ...
+                [1 1 3]);
+
+            labelSlice = app.Microglia3DLabelVolume(:,:,sliceNumber);
+            objectLabels = unique(labelSlice);
+            objectLabels(objectLabels == 0) = [];
+
+            % Before classification each object has a different colour
+            % After classification the borders use the three class colours
+            if ~isempty(objectLabels)
+
+                if isempty(app.Microglia3DClassified)
+                    objectColours = hsv(numel(objectLabels));
+
+                    for objectIndex = 1:numel(objectLabels)
+                        currentMask = ...
+                            labelSlice == objectLabels(objectIndex);
+
+                        boundary = bwperim(currentMask);
+
+                        rgbImage = imoverlay( ...
+                            rgbImage, ...
+                            boundary, ...
+                            objectColours(objectIndex,:));
+                    end
+
+                else
+                    for objectIndex = 1:numel(objectLabels)
+                        currentLabel = objectLabels(objectIndex);
+
+                        rowIndex = find( ...
+                            app.Microglia3DClassified.ObjectID == currentLabel, ...
+                            1);
+
+                        if isempty(rowIndex)
+                            continue;
+                        end
+
+                        className = ...
+                            app.Microglia3DClassified.PredictedMorphology(rowIndex);
+
+                        classColour = ...
+                            getMicrogliaClassColour(app, className);
+
+                        currentMask = ...
+                            labelSlice == currentLabel;
+
+                        boundary = bwperim(currentMask);
+
+                        rgbImage = imoverlay( ...
+                            rgbImage, ...
+                            boundary, ...
+                            classColour);
+                    end
+                end
+            end
+
+            cla(app.HistogramAxes);
+            imshow(rgbImage, 'Parent', app.HistogramAxes);
+
+            app.HistogramAxes.Visible = 'on';
+            app.HistogramAxes.XTick = [];
+            app.HistogramAxes.YTick = [];
+            app.HistogramAxes.XLabel.String = '';
+            app.HistogramAxes.YLabel.String = '';
+            title(app.HistogramAxes, '');
+
+            app.SegmentedSliceLabel.Text = sprintf( ...
+                'Z %d/%d', sliceNumber, numberOfSlices);
+        end
+
+        function showSegmentedMIP(app)
+            if isempty(app.Microglia3DLabelVolume) || isempty(app.Microglia3DImage)
+                return;
+            end
+
+            % If classification already exists, keep the classified colours
+            if ~isempty(app.Microglia3DClassified)
+                displayClassifiedMicrogliaMIP(app);
+                return;
+            end
+
+            originalProjection = mat2gray( ...
+                max(app.Microglia3DImage, [], 3));
+
+            rgbImage = repmat( ...
+                im2uint8(originalProjection), ...
+                [1 1 3]);
+
+            objectLabels = unique(app.Microglia3DLabelVolume);
+            objectLabels(objectLabels == 0) = [];
+
+            if ~isempty(objectLabels)
+                objectColours = hsv(numel(objectLabels));
+
+                for objectIndex = 1:numel(objectLabels)
+                    objectMask = ...
+                        app.Microglia3DLabelVolume == objectLabels(objectIndex);
+
+                    objectProjection = max(objectMask, [], 3);
+                    boundary = bwperim(objectProjection);
+
+                    rgbImage = imoverlay( ...
+                        rgbImage, ...
+                        boundary, ...
+                        objectColours(objectIndex,:));
+                end
+            end
+
+            cla(app.HistogramAxes);
+            imshow(rgbImage, 'Parent', app.HistogramAxes);
+
+            app.HistogramAxes.Visible = 'on';
+            app.HistogramAxes.XTick = [];
+            app.HistogramAxes.YTick = [];
+            app.HistogramAxes.XLabel.String = '';
+            app.HistogramAxes.YLabel.String = '';
+            title(app.HistogramAxes, '');
+
+            app.SegmentedSliceLabel.Text = 'MIP';
+        end
+
+        function colour = getMicrogliaClassColour(~, className)
+            % Fixed class colours used everywhere in the app:
+            % Amoeboid  = red
+            % Activated = yellow
+            % Ramified  = green
+
+            className = string(className);
+
+            if className == "Amoeboid"
+                colour = [1 0 0];
+
+            elseif className == "Activated"
+                colour = [1 1 0];
+
+            elseif className == "Ramified"
+                colour = [0 1 0];
+
+            else
+                colour = [1 1 1];
+            end
+        end
+
+        function displayClassifiedMicrogliaMIP(app)
+            if isempty(app.Microglia3DClassified) || ...
+                    isempty(app.Microglia3DLabelVolume) || ...
+                    isempty(app.Microglia3DImage)
+                return;
+            end
+
+            originalProjection = mat2gray( ...
+                max(app.Microglia3DImage, [], 3));
+
+            rgbImage = repmat( ...
+                im2uint8(originalProjection), ...
+                [1 1 3]);
+
+            objectLabels = unique(app.Microglia3DLabelVolume);
+            objectLabels(objectLabels == 0) = [];
+
+            for objectIndex = 1:numel(objectLabels)
+                currentLabel = objectLabels(objectIndex);
+
+                rowIndex = find( ...
+                    app.Microglia3DClassified.ObjectID == currentLabel, ...
+                    1);
+
+                if isempty(rowIndex)
+                    continue;
+                end
+
+                className = ...
+                    app.Microglia3DClassified.PredictedMorphology(rowIndex);
+
+                classColour = ...
+                    getMicrogliaClassColour(app, className);
+
+                objectMask = ...
+                    app.Microglia3DLabelVolume == currentLabel;
+
+                objectProjection = max(objectMask, [], 3);
+                boundary = bwperim(objectProjection);
+
+                rgbImage = imoverlay( ...
+                    rgbImage, ...
+                    boundary, ...
+                    classColour);
+            end
+
+            cla(app.HistogramAxes);
+            imshow(rgbImage, 'Parent', app.HistogramAxes);
+
+            app.HistogramAxes.Visible = 'on';
+            app.HistogramAxes.XTick = [];
+            app.HistogramAxes.YTick = [];
+            app.HistogramAxes.XLabel.String = '';
+            app.HistogramAxes.YLabel.String = '';
+            title(app.HistogramAxes, '');
+
+            app.SegmentedSliceLabel.Text = 'MIP';
+        end
+
+        function addMicrogliaClassLegend(app, figureHandle)
+            % Add colour code and class counts at the right side of a figure
+
+            if isempty(app.Microglia3DClassified)
+                return;
+            end
+
+            classNames = ["Amoeboid", "Activated", "Ramified"];
+            classColours = [ ...
+                1 0 0; ...
+                1 1 0; ...
+                0 1 0];
+
+            classCounts = zeros(3,1);
+
+            for classIndex = 1:3
+                classCounts(classIndex) = sum( ...
+                    app.Microglia3DClassified.PredictedMorphology == ...
+                    classNames(classIndex));
+            end
+
+            annotation( ...
+                figureHandle, ...
+                'textbox', ...
+                [0.76 0.68 0.21 0.08], ...
+                'String', 'Classification', ...
+                'FontWeight', 'bold', ...
+                'FontSize', 12, ...
+                'EdgeColor', 'none');
+
+            yPositions = [0.59 0.50 0.41];
+
+            for classIndex = 1:3
+                annotation( ...
+                    figureHandle, ...
+                    'rectangle', ...
+                    [0.77 yPositions(classIndex) 0.035 0.035], ...
+                    'FaceColor', classColours(classIndex,:), ...
+                    'EdgeColor', [0 0 0]);
+
+                annotation( ...
+                    figureHandle, ...
+                    'textbox', ...
+                    [0.815 yPositions(classIndex)-0.008 0.17 0.055], ...
+                    'String', sprintf( ...
+                        '%s: %d', ...
+                        classNames(classIndex), ...
+                        classCounts(classIndex)), ...
+                    'FontSize', 11, ...
+                    'EdgeColor', 'none');
+            end
+
+            annotation( ...
+                figureHandle, ...
+                'textbox', ...
+                [0.77 0.30 0.20 0.07], ...
+                'String', sprintf( ...
+                    'Total cells: %d', ...
+                    height(app.Microglia3DClassified)), ...
+                'FontWeight', 'bold', ...
+                'FontSize', 11, ...
+                'EdgeColor', 'none');
         end
 
         function T = fixTableNames(~, T)
-            % Replace spaces in column names to produce valid MATLAB identifiers,
-            % matching exactly what jsonencode/table2struct would do internally
-            % so that no automatic renaming warning is triggered.
             T.Properties.VariableNames = matlab.lang.makeValidName( ...
                 T.Properties.VariableNames);
         end
@@ -288,13 +693,34 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
     % Callbacks that handle component events
     methods (Access = private)
 
-        % Code that executes after component creation
+   
         function startupFcn(app)
+         
+            appFolder = fileparts(mfilename('fullpath'));
+
+            possibleMicrogliaFolders = { ...
+                fullfile(appFolder, 'Microglia_3D'), ...
+                fullfile(appFolder, 'Multires_ML_Microscopy', 'Microglia_3D')};
+
+            microgliaFolderFound = false;
+            for folderIndex = 1:numel(possibleMicrogliaFolders)
+                if isfolder(possibleMicrogliaFolders{folderIndex})
+                    addpath(possibleMicrogliaFolders{folderIndex});
+                    microgliaFolderFound = true;
+                    break;
+                end
+            end
+
+            if ~microgliaFolderFound
+                warning('Microglia_3D folder was not found beside the app.');
+            end
+
             IMGDisplay(app, ones(520, 740)*0.9, app.ImageDisp);
             loaded  = load('EfficientNet.mat', 'net');
             app.net = loaded.net;
             set(app.ProgressBarAxes, 'visible', 'off');
             set(app.ProgressBarAxes, 'xtick', []);
+            set(app.ProgressBarAxes, 'ytick', []);
             UpdateProgress(app);
             set(app.ProgressBarAxes, 'XLim', [0 1]);
             DefaultButtonPushed(app);
@@ -305,10 +731,148 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
         function UploadImage(app, ~)
             app.InitialLabel.Visible = 'off';
 
-            [files, path] = uigetfile({'*.png;*.jpg;*.tif'}, 'Select Images', 'MultiSelect', 'on');
-            if isequal(files, 0), return; end
-            if ~iscell(files), files = {files}; end
+            [files, path] = uigetfile( ...
+                {'*.png;*.jpg;*.jpeg;*.tif;*.tiff;*.lsm', ...
+                 'Microscopy Images (*.png, *.jpg, *.jpeg, *.tif, *.tiff, *.lsm)'}, ...
+                'Select Images', ...
+                'MultiSelect', 'on');
 
+            if isequal(files, 0)
+                return;
+            end
+
+            if ~iscell(files)
+                files = {files};
+            end
+
+            % Detect a true 3D stack. Existing 2D files continue through
+            % the original upload path below
+            is3D = false;
+
+            if isscalar(files)
+                fullFilename = fullfile(path, files{1});
+                [~,~,extension] = fileparts(fullFilename);
+
+                if strcmpi(extension, '.lsm')
+                    is3D = true;
+                elseif strcmpi(extension, '.tif') || strcmpi(extension, '.tiff')
+                    info = imfinfo(fullFilename);
+                    is3D = numel(info) > 1;
+                end
+            else
+                for k = 1:numel(files)
+                    fullFilename = fullfile(path, files{k});
+                    [~,~,extension] = fileparts(fullFilename);
+
+                    if strcmpi(extension, '.lsm')
+                        uialert(app.UIFigure, ...
+                            'Please select a 3D stack by itself.', ...
+                            '3D Stack Selection');
+                        return;
+                    elseif strcmpi(extension, '.tif') || strcmpi(extension, '.tiff')
+                        info = imfinfo(fullFilename);
+                        if numel(info) > 1
+                            uialert(app.UIFigure, ...
+                                'Please select a 3D stack by itself.', ...
+                                '3D Stack Selection');
+                            return;
+                        end
+                    end
+                end
+            end
+
+            if is3D
+                try
+                    fullFilename = fullfile(path, files{1});
+
+                    [imageStack, xMeta, yMeta, zMeta] = ...
+                        loadMicroglia3D(fullFilename);
+
+                    app.Microglia3DFilename = string(fullFilename);
+                    app.Microglia3DImage = imageStack;
+                    app.Microglia3DMetadataX = xMeta;
+                    app.Microglia3DMetadataY = yMeta;
+                    app.Microglia3DMetadataZ = zMeta;
+                    app.Microglia3DLabelVolume = [];
+                    app.Microglia3DSomaMask = [];
+                    app.Microglia3DFeatures = table();
+                    app.Microglia3DClassified = table();
+
+                    % Keep 2D and 3D data separate
+                    app.Images = {};
+                    app.Filenames = {};
+                    app.AnalysisData = {};
+
+                    app.DropDown.Value = 'Microglia3D';
+                    updateAlgorithmControls(app);
+                    updateMicrogliaVoxelFields(app);
+
+                    numberOfSlices = size(imageStack, 3);
+                    middleSlice = ceil(numberOfSlices / 2);
+
+                    app.StackSliceSlider.Limits = [1 max(2, numberOfSlices)];
+                    app.StackSliceSlider.MajorTicks = [1 numberOfSlices];
+                    app.StackSliceSlider.Value = middleSlice;
+
+                    app.StackSliceLabel.Visible = 'on';
+                    app.StackSliceSlider.Visible = 'on';
+                    app.MIPButton.Visible = 'on';
+
+                    app.SegmentedSliceLabel.Visible = 'off';
+                    app.SegmentedSliceSlider.Visible = 'off';
+                    app.SegmentedMIPButton.Visible = 'off';
+                    app.Show2DButton.Visible = 'off';
+                    app.Show3DButton.Visible = 'off';
+                    app.Classify3DButton.Visible = 'off';
+
+                    app.HistogramAxes.Visible = 'off';
+                    cla(app.HistogramAxes);
+
+                    displayMicrogliaSlice(app, middleSlice);
+
+                    app.Segment_Button.Visible = 'on';
+                    app.Number_of_Cells_Field.Visible = 'off';
+                    app.Number_of_Cells_Text.Visible = 'off';
+
+                    fprintf('\nLoaded 3D microscopy stack: %s\n', files{1});
+                    fprintf('Stack size: %d x %d x %d\n', ...
+                        size(imageStack,2), ...
+                        size(imageStack,1), ...
+                        numberOfSlices);
+
+                catch ME
+                    uialert(app.UIFigure, ...
+                        ME.message, ...
+                        '3D Image Loading Error');
+                end
+
+                return;
+            end
+
+            % Clear Microglia3D state before loading a 2D image
+            app.Microglia3DFilename = "";
+            app.Microglia3DImage = [];
+            app.Microglia3DLabelVolume = [];
+            app.Microglia3DSomaMask = [];
+            app.Microglia3DMetadataX = NaN;
+            app.Microglia3DMetadataY = NaN;
+            app.Microglia3DMetadataZ = NaN;
+            app.Microglia3DFeatures = table();
+            app.Microglia3DClassified = table();
+
+            app.StackSliceLabel.Visible = 'off';
+            app.StackSliceSlider.Visible = 'off';
+            app.MIPButton.Visible = 'off';
+            app.SegmentedSliceLabel.Visible = 'off';
+            app.SegmentedSliceSlider.Visible = 'off';
+            app.SegmentedMIPButton.Visible = 'off';
+            app.Show2DButton.Visible = 'off';
+            app.Show3DButton.Visible = 'off';
+            app.Classify3DButton.Visible = 'off';
+            app.HistogramAxes.Position = [457 72 361 267];
+            app.ProgressBarAxes.Position = [38 395 397 37];
+
+            % Original 2D upload behaviour - intentionally unchanged
             app.Images = {};
             app.Filenames = {};
 
@@ -334,8 +898,509 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             app.Segment_Button.Visible = 'on';
         end
 
+        function StackSliceSliderValueChanged(app, ~)
+            displayMicrogliaSlice(app, app.StackSliceSlider.Value);
+        end
+
+        function StackSliceSliderValueChanging(app, event)
+            displayMicrogliaSlice(app, event.Value);
+        end
+
+        function MIPButtonPushed(app, ~)
+            if isempty(app.Microglia3DImage)
+                return;
+            end
+
+            projection = mat2gray(max(app.Microglia3DImage, [], 3));
+            IMGDisplay(app, projection, app.ImageDisp);
+            app.StackSliceLabel.Text = 'MIP';
+        end
+
+        function SegmentedSliceSliderValueChanged(app, ~)
+            displaySegmentedMicrogliaSlice( ...
+                app, app.SegmentedSliceSlider.Value);
+        end
+
+        function SegmentedSliceSliderValueChanging(app, event)
+            displaySegmentedMicrogliaSlice(app, event.Value);
+        end
+
+        function SegmentedMIPButtonPushed(app, ~)
+            showSegmentedMIP(app);
+        end
+
+        function Show2DButtonPushed(app, ~)
+            if isempty(app.Microglia3DLabelVolume)
+                uialert(app.UIFigure, ...
+                    'Run Microglia3D segmentation first.', ...
+                    'No 3D Segmentation');
+                return;
+            end
+
+            labelProjection = max( ...
+                app.Microglia3DLabelVolume, ...
+                [], ...
+                3);
+
+            maximumLabel = ...
+                double(max(app.Microglia3DLabelVolume(:)));
+
+            figureHandle = figure( ...
+                'Name', '2D Microglia Segmentation', ...
+                'NumberTitle', 'off', ...
+                'Color', 'w', ...
+                'Position', [100 100 900 620]);
+
+            axesHandle = axes( ...
+                'Parent', figureHandle, ...
+                'Position', [0.05 0.08 0.68 0.86]);
+
+            if isempty(app.Microglia3DClassified)
+                % Normal segmentation view before classification
+                if maximumLabel < 1
+                    colouredMasks = zeros( ...
+                        size(labelProjection,1), ...
+                        size(labelProjection,2), ...
+                        3);
+                else
+                    colouredMasks = label2rgb( ...
+                        labelProjection, ...
+                        hsv(maximumLabel), ...
+                        'k');
+                end
+
+                imshow(colouredMasks, 'Parent', axesHandle);
+
+                title(axesHandle, sprintf( ...
+                    '2D Segmentation - %d Cells', ...
+                    maximumLabel));
+
+            else
+                % Classified 2D view
+                rgbImage = zeros( ...
+                    size(labelProjection,1), ...
+                    size(labelProjection,2), ...
+                    3);
+
+                objectLabels = unique(app.Microglia3DLabelVolume);
+                objectLabels(objectLabels == 0) = [];
+
+                for objectIndex = 1:numel(objectLabels)
+                    currentLabel = objectLabels(objectIndex);
+
+                    rowIndex = find( ...
+                        app.Microglia3DClassified.ObjectID == currentLabel, ...
+                        1);
+
+                    if isempty(rowIndex)
+                        continue;
+                    end
+
+                    className = ...
+                        app.Microglia3DClassified.PredictedMorphology(rowIndex);
+
+                    classColour = ...
+                        getMicrogliaClassColour(app, className);
+
+                    objectProjection = max( ...
+                        app.Microglia3DLabelVolume == currentLabel, ...
+                        [], ...
+                        3);
+
+                    for colourChannel = 1:3
+                        channel = rgbImage(:,:,colourChannel);
+                        channel(objectProjection) = ...
+                            classColour(colourChannel);
+                        rgbImage(:,:,colourChannel) = channel;
+                    end
+                end
+
+                imshow(rgbImage, 'Parent', axesHandle);
+
+                title(axesHandle, sprintf( ...
+                    '2D Classified Microglia - %d Cells', ...
+                    height(app.Microglia3DClassified)));
+
+                addMicrogliaClassLegend(app, figureHandle);
+            end
+        end
+
+        function Show3DButtonPushed(app, ~)
+            if isempty(app.Microglia3DLabelVolume)
+                uialert(app.UIFigure, ...
+                    'Run Microglia3D segmentation first.', ...
+                    'No 3D Segmentation');
+                return;
+            end
+
+            objectLabels = unique(app.Microglia3DLabelVolume);
+            objectLabels(objectLabels == 0) = [];
+
+            numberOfObjects = numel(objectLabels);
+
+            if numberOfObjects == 0
+                return;
+            end
+
+            figureHandle = figure( ...
+                'Name', '3D Microglia Segmentation', ...
+                'NumberTitle', 'off', ...
+                'Color', 'w', ...
+                'Position', [100 100 950 650]);
+
+            axesHandle = axes( ...
+                'Parent', figureHandle, ...
+                'Position', [0.06 0.10 0.68 0.82]);
+
+            hold(axesHandle, 'on');
+
+            xVoxelSize = app.MG3D_XVoxelField.Value;
+            yVoxelSize = app.MG3D_YVoxelField.Value;
+            zVoxelSize = app.MG3D_ZVoxelField.Value;
+
+            if isempty(app.Microglia3DClassified)
+                objectColours = hsv(numberOfObjects);
+            end
+
+            for objectIndex = 1:numberOfObjects
+                currentLabel = objectLabels(objectIndex);
+
+                objectMask = ...
+                    app.Microglia3DLabelVolume == currentLabel;
+
+                surfaceData = isosurface(objectMask, 0.5);
+
+                if isempty(surfaceData.vertices)
+                    continue;
+                end
+
+                vertices = surfaceData.vertices;
+
+                vertices(:,1) = vertices(:,1) * xVoxelSize;
+                vertices(:,2) = vertices(:,2) * yVoxelSize;
+                vertices(:,3) = vertices(:,3) * zVoxelSize;
+
+                if isempty(app.Microglia3DClassified)
+                    currentColour = objectColours(objectIndex,:);
+                else
+                    rowIndex = find( ...
+                        app.Microglia3DClassified.ObjectID == currentLabel, ...
+                        1);
+
+                    if isempty(rowIndex)
+                        currentColour = [1 1 1];
+                    else
+                        className = ...
+                            app.Microglia3DClassified.PredictedMorphology(rowIndex);
+
+                        currentColour = ...
+                            getMicrogliaClassColour(app, className);
+                    end
+                end
+
+                patch( ...
+                    axesHandle, ...
+                    'Faces', surfaceData.faces, ...
+                    'Vertices', vertices, ...
+                    'FaceColor', currentColour, ...
+                    'EdgeColor', 'none', ...
+                    'FaceAlpha', 0.8);
+            end
+
+            xlabel(axesHandle, 'X (\mum)');
+            ylabel(axesHandle, 'Y (\mum)');
+            zlabel(axesHandle, 'Z (\mum)');
+
+            if isempty(app.Microglia3DClassified)
+                title(axesHandle, sprintf( ...
+                    '3D Segmentation - %d Cells', ...
+                    numberOfObjects));
+            else
+                title(axesHandle, sprintf( ...
+                    '3D Classified Microglia - %d Cells', ...
+                    height(app.Microglia3DClassified)));
+
+                addMicrogliaClassLegend(app, figureHandle);
+            end
+
+            axis(axesHandle, 'equal');
+            axis(axesHandle, 'tight');
+            grid(axesHandle, 'on');
+            view(axesHandle, 3);
+
+            rotate3d(figureHandle, 'on');
+            camlight(axesHandle, 'headlight');
+            lighting(axesHandle, 'gouraud');
+
+            hold(axesHandle, 'off');
+        end
+
+        function Classify3DButtonPushed(app, ~)
+            if isempty(app.Microglia3DLabelVolume)
+                uialert(app.UIFigure, ...
+                    'Run Microglia3D segmentation first.', ...
+                    'No 3D Segmentation');
+                return;
+            end
+
+            if isempty(app.Microglia3DSomaMask)
+                uialert(app.UIFigure, ...
+                    'The soma mask is missing. Run segmentation again.', ...
+                    'Missing Soma Data');
+                return;
+            end
+
+            try
+                app.Classify3DButton.Enable = 'off';
+                drawnow;
+
+                xVoxelSize = app.MG3D_XVoxelField.Value;
+                yVoxelSize = app.MG3D_YVoxelField.Value;
+                zVoxelSize = app.MG3D_ZVoxelField.Value;
+
+                fprintf('\nExtracting 3D morphology features...\n');
+
+                featureTable = extractMicrogliaFeatures3D( ...
+                    app.Microglia3DLabelVolume, ...
+                    app.Microglia3DSomaMask, ...
+                    xVoxelSize, ...
+                    yVoxelSize, ...
+                    zVoxelSize);
+
+                app.Microglia3DFeatures = featureTable;
+
+                fprintf('\nClassifying microglia morphology...\n');
+
+                classifiedTable = ...
+                    classifyMicroglia3D(featureTable);
+
+                app.Microglia3DClassified = ...
+                    classifiedTable;
+
+                % Update the right MIP using the morphology class colours
+                displayClassifiedMicrogliaMIP(app);
+
+                % Hide the classification button after prediction
+                app.Classify3DButton.Visible = 'off';
+
+            catch ME
+                app.Classify3DButton.Enable = 'on';
+
+                uialert(app.UIFigure, ...
+                    ME.message, ...
+                    'Microglia Classification Error');
+            end
+        end
+
         % Button pushed function: Segment_Button
         function Segment(app, ~)
+            isMG3D = strcmp(app.DropDown.Value, 'Microglia3D');
+
+            if isMG3D
+                if isempty(app.Microglia3DImage) || ...
+                        strlength(app.Microglia3DFilename) == 0
+
+                    uialert(app.UIFigure, ...
+                        'Please upload a 3D TIFF/TIFF or LSM stack first.', ...
+                        'No 3D Stack');
+                    return;
+                end
+
+                xVoxelSize = app.MG3D_XVoxelField.Value;
+                yVoxelSize = app.MG3D_YVoxelField.Value;
+                zVoxelSize = app.MG3D_ZVoxelField.Value;
+
+                missingAxes = strings(0);
+
+                if xVoxelSize <= 0
+                    missingAxes(end+1) = "X";
+                end
+                if yVoxelSize <= 0
+                    missingAxes(end+1) = "Y";
+                end
+                if zVoxelSize <= 0
+                    missingAxes(end+1) = "Z";
+                end
+
+                if ~isempty(missingAxes)
+                    uialert(app.UIFigure, ...
+                        sprintf(['Voxel size information is missing for: %s.\n' ...
+                        'Enter the missing value(s) in Settings before segmentation.'], ...
+                        strjoin(missingAxes, ', ')), ...
+                        'Missing Voxel Size');
+                    return;
+                end
+
+                try
+                    app.Segment_Button.Enable = 'off';
+
+                    % Resize the progress display for the Microglia3D view
+                    app.ProgressBarAxes.Position = [85 397 303 50];
+                    app.ProgressBarAxes.Visible = 'on';
+
+                    app.Progress = 0.05;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    % Fixed preprocessing values used by the final pipeline
+                    preprocessSettings.gaussianSigmaXY = 1.0;
+                    preprocessSettings.gaussianSigmaZ = 0.7;
+                    preprocessSettings.backgroundRadius = 18;
+
+                    segmentSettings.lowThresholdMultiplier = ...
+                        app.MG3D_LowThresholdField.Value;
+                    segmentSettings.highThresholdMultiplier = ...
+                        app.MG3D_HighThresholdField.Value;
+                    segmentSettings.minimumObjectVolume_um3 = ...
+                        app.MG3D_MinVolumeField.Value;
+                    segmentSettings.xVoxelSize = xVoxelSize;
+                    segmentSettings.yVoxelSize = yVoxelSize;
+                    segmentSettings.zVoxelSize = zVoxelSize;
+
+                    somaSettings.somaCoreRadius_um = 1.5;
+                    somaSettings.minimumSomaVolume_um3 = ...
+                        app.MG3D_MinSomaField.Value;
+
+                    fprintf('\nRunning Microglia3D preprocessing...\n');
+
+                    [preprocessedStack, ~] = ...
+                        preprocessMicroglia3D( ...
+                        app.Microglia3DImage, ...
+                        preprocessSettings);
+
+                    app.Progress = 0.30;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    fprintf('\nRunning Microglia3D segmentation...\n');
+
+                    [labelVolume, ~, ~] = ...
+                        segmentMicroglia3D( ...
+                        preprocessedStack, ...
+                        segmentSettings);
+
+                    app.Progress = 0.52;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    fprintf('\nRemoving XY-border objects...\n');
+
+                    [labelVolume, ~] = ...
+                        removeXYBorderObjects3D(labelVolume);
+
+                    app.Progress = 0.65;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    fprintf('\nDetecting soma candidates...\n');
+
+                    [somaMask, ~] = ...
+                        detectMicrogliaSomas3D( ...
+                        labelVolume, ...
+                        xVoxelSize, ...
+                        yVoxelSize, ...
+                        zVoxelSize, ...
+                        somaSettings);
+
+                    app.Progress = 0.78;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    fprintf('\nSeparating possible merged cells...\n');
+
+                    [analysisLabelVolume, ~] = ...
+                        separateMicroglia3D( ...
+                        labelVolume, ...
+                        somaMask);
+
+                    app.Microglia3DLabelVolume = ...
+                        analysisLabelVolume;
+
+                    app.Microglia3DSomaMask = somaMask;
+                    app.Microglia3DFeatures = table();
+                    app.Microglia3DClassified = table();
+
+                    app.Progress = 0.92;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    numberOfSlices = size(analysisLabelVolume, 3);
+                    middleSlice = ceil(numberOfSlices / 2);
+
+                    app.SegmentedSliceSlider.Limits = ...
+                        [1 max(2, numberOfSlices)];
+                    app.SegmentedSliceSlider.MajorTicks = ...
+                        [1 numberOfSlices];
+                    app.SegmentedSliceSlider.Value = middleSlice;
+
+                    % Resize the right axes for the Microglia3D result
+                    app.HistogramAxes.Position = [460 50 365 365];
+
+                    app.HistogramAxes.Box = 'off';
+                    app.HistogramAxes.Color = 'none';
+                    app.HistogramAxes.XColor = 'none';
+                    app.HistogramAxes.YColor = 'none';
+
+                    app.SegmentedSliceLabel.Visible = 'on';
+                    app.SegmentedSliceSlider.Visible = 'on';
+                    app.SegmentedMIPButton.Visible = 'on';
+
+                    app.Show2DButton.Visible = 'on';
+                    app.Show2DButton.Enable = 'on';
+
+                    app.Show3DButton.Visible = 'on';
+                    app.Show3DButton.Enable = 'on';
+
+                    app.Classify3DButton.Visible = 'on';
+                    app.Classify3DButton.Enable = 'on';
+
+                    displaySegmentedMicrogliaSlice( ...
+                        app, middleSlice);
+
+                    objectLabels = unique(analysisLabelVolume);
+                    objectLabels(objectLabels == 0) = [];
+                    numberOfObjects = numel(objectLabels);
+
+                    app.Number_of_Cells_Field.Visible = 'on';
+                    app.Number_of_Cells_Text.Visible = 'on';
+                    app.Number_of_Cells_Field.Value = numberOfObjects;
+
+                    % Hide graph controls while the axes display the 3D-stack result
+                    app.XDropDown.Visible = 'off';
+                    app.YDropDown.Visible = 'off';
+                    app.XFeatureLabel_2.Visible = 'off';
+                    app.YFeatureLabel_2.Visible = 'off';
+                    app.PlotIndex.Visible = 'off';
+                    app.PlotFeaturesText.Visible = 'off';
+                    app.PlotMode.Visible = 'off';
+                    app.NextButton.Visible = 'off';
+                    app.PreviousButton.Visible = 'off';
+
+                    app.Progress = 1;
+                    UpdateProgress(app);
+                    drawnow;
+
+                    app.ProgressBarAxes.Visible = 'off';
+                    cla(app.ProgressBarAxes);
+
+                    app.Segment_Button.Enable = 'on';
+
+                    fprintf('\nMicroglia3D segmentation complete.\n');
+                    fprintf('Final separated cells: %d\n', numberOfObjects);
+
+                catch ME
+                    app.Segment_Button.Enable = 'on';
+                    app.ProgressBarAxes.Visible = 'off';
+                    cla(app.ProgressBarAxes);
+
+                    uialert(app.UIFigure, ...
+                        ME.message, ...
+                        '3D Segmentation Error');
+                end
+
+                return;
+            end
+
             if isempty(app.Images)
                 errordlg('Please upload an image first!', 'Error');
                 return;
@@ -553,6 +1618,21 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             xFeature = app.XDropDown.Value;
             yFeature = app.YDropDown.Value;
             if isempty(app.AnalysisData), return; end
+
+            % Restore graph axes after Microglia3D image display
+            cla(app.HistogramAxes, 'reset');
+
+            app.HistogramAxes.Position = [457 72 361 267];
+            app.HistogramAxes.Box = 'on';
+            app.HistogramAxes.Color = [1 1 1];
+            app.HistogramAxes.XColor = [0.15 0.15 0.15];
+            app.HistogramAxes.YColor = [0.15 0.15 0.15];
+
+            app.HistogramAxes.XLimMode = 'auto';
+            app.HistogramAxes.YLimMode = 'auto';
+            app.HistogramAxes.DataAspectRatioMode = 'auto';
+            app.HistogramAxes.PlotBoxAspectRatioMode = 'auto';
+            app.HistogramAxes.YDir = 'normal';
 
             % Extract the selected feature's values
             if strcmp(app.PlotMode.Value, 'Aggregate')
@@ -839,8 +1919,8 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
         function DropDownValueChanged(app, ~)
             value = app.DropDown.Value;
 
-            if strcmp(value, 'Sobel+Watershed')
-                % No .mat file to load; just update the visible controls
+            if strcmp(value, 'Sobel+Watershed') || strcmp(value, 'Microglia3D')
+                % These algorithms do not load a neural-network MAT file.
                 updateAlgorithmControls(app);
             else
                 loaded   = load(value + ".mat", 'net');
@@ -949,6 +2029,46 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             app.SingleImage       = 0;
             app.AggregateAnalysis = [];
             app.Tracks            = [];
+
+            % Clear Microglia3D state
+            app.Microglia3DFilename = "";
+            app.Microglia3DImage = [];
+            app.Microglia3DLabelVolume = [];
+            app.Microglia3DSomaMask = [];
+            app.Microglia3DMetadataX = NaN;
+            app.Microglia3DMetadataY = NaN;
+            app.Microglia3DMetadataZ = NaN;
+            app.Microglia3DFeatures = table();
+            app.Microglia3DClassified = table();
+
+            app.StackSliceLabel.Visible = 'off';
+            app.StackSliceSlider.Visible = 'off';
+            app.MIPButton.Visible = 'off';
+            app.SegmentedSliceLabel.Visible = 'off';
+            app.SegmentedSliceSlider.Visible = 'off';
+            app.SegmentedMIPButton.Visible = 'off';
+            app.Show2DButton.Visible = 'off';
+            app.Show3DButton.Visible = 'off';
+            app.Classify3DButton.Visible = 'off';
+
+            app.HistogramAxes.Position = [457 72 361 267];
+
+            cla(app.HistogramAxes, 'reset');
+
+            app.HistogramAxes.Position = [457 72 361 267];
+
+            app.HistogramAxes.Box = 'on';
+            app.HistogramAxes.Color = [1 1 1];
+            app.HistogramAxes.XColor = [0.15 0.15 0.15];
+            app.HistogramAxes.YColor = [0.15 0.15 0.15];
+
+            app.HistogramAxes.XLimMode = 'auto';
+            app.HistogramAxes.YLimMode = 'auto';
+            app.HistogramAxes.DataAspectRatioMode = 'auto';
+            app.HistogramAxes.PlotBoxAspectRatioMode = 'auto';
+            app.HistogramAxes.YDir = 'normal';
+
+            app.ProgressBarAxes.Position = [0 395 435 37];
 
             % Reset Image display to default grey screen
             IMGDisplay(app, ones(520, 740)*0.9, app.ImageDisp);
@@ -1172,7 +2292,7 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             app.Number_of_Cells_Text.FontSize             = 18;
             app.Number_of_Cells_Text.FontWeight           = 'bold';
             app.Number_of_Cells_Text.Visible              = 'off';
-            app.Number_of_Cells_Text.Position             = [496 395 148 24];
+            app.Number_of_Cells_Text.Position             = [520 397 150 25];
             app.Number_of_Cells_Text.Text                 = 'Number of Cells ';
 
             % Number_of_Cells_Field
@@ -1185,7 +2305,7 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             app.Number_of_Cells_Field.FontName            = 'Inter';
             app.Number_of_Cells_Field.FontSize            = 18;
             app.Number_of_Cells_Field.Visible             = 'off';
-            app.Number_of_Cells_Field.Position            = [654 395 57 24];
+            app.Number_of_Cells_Field.Position            = [670 397 50 25];
 
             % YDropDown
             app.YDropDown = uidropdown(app.UIFigure);
@@ -1228,6 +2348,101 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             app.ImageDisp = uiimage(app.UIFigure);
             app.ImageDisp.ImageClickedFcn = createCallbackFcn(app, @UploadImage, true);
             app.ImageDisp.Position        = [41 104 390 292];
+
+            % Microglia3D stack navigation controls
+
+            % Original stack controls
+            app.StackSliceLabel = uilabel(app.UIFigure);
+            app.StackSliceLabel.Visible = 'off';
+            app.StackSliceLabel.FontWeight = 'bold';
+            app.StackSliceLabel.HorizontalAlignment = 'center';
+            app.StackSliceLabel.Position = [390 380 45 20];
+            app.StackSliceLabel.Text = 'Z';
+
+            app.StackSliceSlider = uislider(app.UIFigure);
+            app.StackSliceSlider.Orientation = 'vertical';
+            app.StackSliceSlider.Visible = 'off';
+            app.StackSliceSlider.Limits = [1 2];
+            app.StackSliceSlider.Value = 1;
+            app.StackSliceSlider.ValueChangedFcn = ...
+                createCallbackFcn(app, @StackSliceSliderValueChanged, true);
+            app.StackSliceSlider.ValueChangingFcn = ...
+                createCallbackFcn(app, @StackSliceSliderValueChanging, true);
+            app.StackSliceSlider.Position = [405 145 3 225];
+
+            app.MIPButton = uibutton(app.UIFigure, 'push');
+            app.MIPButton.Visible = 'off';
+            app.MIPButton.ButtonPushedFcn = ...
+                createCallbackFcn(app, @MIPButtonPushed, true);
+            app.MIPButton.Position = [390 105 45 25];
+            app.MIPButton.Text = 'MIP';
+            app.MIPButton.Tooltip = {'Maximum Intensity Projection'};
+
+            % Segmented stack controls
+            app.SegmentedSliceLabel = uilabel(app.UIFigure);
+            app.SegmentedSliceLabel.Visible = 'off';
+            app.SegmentedSliceLabel.FontWeight = 'bold';
+            app.SegmentedSliceLabel.HorizontalAlignment = 'center';
+            app.SegmentedSliceLabel.Position = [771 380 45 20];
+            app.SegmentedSliceLabel.Text = 'Z';
+
+            app.SegmentedSliceSlider = uislider(app.UIFigure);
+            app.SegmentedSliceSlider.Orientation = 'vertical';
+            app.SegmentedSliceSlider.Visible = 'off';
+            app.SegmentedSliceSlider.Limits = [1 2];
+            app.SegmentedSliceSlider.Value = 1;
+            app.SegmentedSliceSlider.ValueChangedFcn = ...
+                createCallbackFcn(app, @SegmentedSliceSliderValueChanged, true);
+            app.SegmentedSliceSlider.ValueChangingFcn = ...
+                createCallbackFcn(app, @SegmentedSliceSliderValueChanging, true);
+            app.SegmentedSliceSlider.Position = [786 145 3 225];
+
+            app.SegmentedMIPButton = uibutton(app.UIFigure, 'push');
+            app.SegmentedMIPButton.Visible = 'off';
+            app.SegmentedMIPButton.ButtonPushedFcn = ...
+                createCallbackFcn(app, @SegmentedMIPButtonPushed, true);
+            app.SegmentedMIPButton.Position = [771 105 45 25];
+            app.SegmentedMIPButton.Text = 'MIP';
+            app.SegmentedMIPButton.Tooltip = {'Maximum Intensity Projection'};
+
+            % Segmentation result buttons under the right result area
+            app.Show2DButton = uibutton(app.UIFigure, 'push');
+            app.Show2DButton.Visible = 'off';
+            app.Show2DButton.ButtonPushedFcn = ...
+                createCallbackFcn(app, @Show2DButtonPushed, true);
+            app.Show2DButton.BackgroundColor = [1 1 1];
+            app.Show2DButton.FontName        = 'Inter';
+            app.Show2DButton.FontSize        = 18;
+            app.Show2DButton.FontWeight      = 'bold';
+            app.Show2DButton.Position = [515 60 90 31];
+            app.Show2DButton.Text = '2D';
+            app.Show2DButton.Tooltip = ...
+                {'Display the separated masks as a coloured 2D projection'};
+
+            app.Show3DButton = uibutton(app.UIFigure, 'push');
+            app.Show3DButton.Visible = 'off';
+            app.Show3DButton.ButtonPushedFcn = ...
+                createCallbackFcn(app, @Show3DButtonPushed, true);
+            app.Show3DButton.BackgroundColor = [1 1 1];
+            app.Show3DButton.FontName        = 'Inter';
+            app.Show3DButton.FontSize        = 18;
+            app.Show3DButton.FontWeight      = 'bold';
+            app.Show3DButton.Position = [635 60 90 31];
+            app.Show3DButton.Text = '3D';
+            app.Show3DButton.Tooltip = ...
+                {'Display separated cells as coloured 3D surfaces'};
+
+            app.Classify3DButton = uibutton(app.UIFigure, 'push');
+            app.Classify3DButton.Visible = 'off';
+            app.Classify3DButton.Enable = 'off';
+            app.Classify3DButton.ButtonPushedFcn = ...
+                createCallbackFcn(app, @Classify3DButtonPushed, true);
+            app.Classify3DButton.BackgroundColor = [0.6784 0.8 0.8392];
+            app.Classify3DButton.FontName        = 'Inter';
+            app.Classify3DButton.FontSize        = 18;
+            app.Classify3DButton.FontWeight      = 'bold';
+            app.Classify3DButton.Position = [555 20 130 31];
+            app.Classify3DButton.Text = 'Classify Cells';
 
             % Reset
             app.Reset = uibutton(app.UIFigure, 'push');
@@ -1507,7 +2722,7 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
 
             % Create DropDown
             app.DropDown = uidropdown(app.Panel);
-            app.DropDown.Items            = {'EfficientNet','ResNet50','ResNet101','CascadeEfficientNet','Sobel+Watershed'};
+            app.DropDown.Items            = {'EfficientNet','ResNet50','ResNet101','CascadeEfficientNet','Sobel+Watershed','Microglia3D'};
             app.DropDown.ValueChangedFcn  = createCallbackFcn(app, @DropDownValueChanged, true);
             app.DropDown.FontSize         = 14;
             app.DropDown.FontWeight       = 'bold';
@@ -1847,6 +3062,83 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
             app.SW_PolarityDropDown.Tooltip         = {'bright = cells lighter than background; dark = cells darker'};
             app.SW_PolarityDropDown.Position        = [145 5 80 22];
 
+            % Microglia3D settings panel
+            % Only user-adjustable parameters are shown here
+            app.MG3D_Panel = uipanel(app.Panel);
+            app.MG3D_Panel.Visible = 'off';
+            app.MG3D_Panel.BackgroundColor = [0.69 0.78 0.80];
+            app.MG3D_Panel.BorderType = 'line';
+            app.MG3D_Panel.Position = [5 5 580 180];
+
+            app.MG3D_TitleLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_TitleLabel.FontSize = 13;
+            app.MG3D_TitleLabel.FontWeight = 'bold';
+            app.MG3D_TitleLabel.Position = [10 150 250 20];
+            app.MG3D_TitleLabel.Text = 'Microglia3D Parameters';
+
+            app.MG3D_XVoxelLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_XVoxelLabel.Position = [10 100 100 20];
+            app.MG3D_XVoxelLabel.Text = 'X voxel size (um):';
+
+            app.MG3D_XVoxelField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_XVoxelField.Limits = [0 Inf];
+            app.MG3D_XVoxelField.Value = 0;
+            app.MG3D_XVoxelField.Position = [110 100 40 20];
+
+            app.MG3D_YVoxelLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_YVoxelLabel.Position = [10 65 100 20];
+            app.MG3D_YVoxelLabel.Text = 'Y voxel size (um):';
+
+            app.MG3D_YVoxelField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_YVoxelField.Limits = [0 Inf];
+            app.MG3D_YVoxelField.Value = 0;
+            app.MG3D_YVoxelField.Position = [110 65 40 20];
+
+            app.MG3D_ZVoxelLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_ZVoxelLabel.Position = [10 30 110 20];
+            app.MG3D_ZVoxelLabel.Text = 'Z voxel size (um):';
+
+            app.MG3D_ZVoxelField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_ZVoxelField.Limits = [0 Inf];
+            app.MG3D_ZVoxelField.Value = 0;
+            app.MG3D_ZVoxelField.Position = [110 30 40 20];
+
+            app.MG3D_LowThresholdLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_LowThresholdLabel.Position = [160 82 140 20];
+            app.MG3D_LowThresholdLabel.Text = 'Low threshold multiplier:';
+
+            app.MG3D_LowThresholdField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_LowThresholdField.Limits = [0 Inf];
+            app.MG3D_LowThresholdField.Value = 0.7;
+            app.MG3D_LowThresholdField.Position = [300 82 40 20];
+
+            app.MG3D_HighThresholdLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_HighThresholdLabel.Position = [160 47 140 20];
+            app.MG3D_HighThresholdLabel.Text = 'High threshold multiplier:';
+
+            app.MG3D_HighThresholdField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_HighThresholdField.Limits = [0 Inf];
+            app.MG3D_HighThresholdField.Value = 1.15;
+            app.MG3D_HighThresholdField.Position = [300 47 40 20];
+
+            app.MG3D_MinVolumeLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_MinVolumeLabel.Position = [350 82 170 20];
+            app.MG3D_MinVolumeLabel.Text = 'Minimum cell volume (um^3):';
+
+            app.MG3D_MinVolumeField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_MinVolumeField.Limits = [0 Inf];
+            app.MG3D_MinVolumeField.Value = 200;
+            app.MG3D_MinVolumeField.Position = [530 82 40 20];
+
+            app.MG3D_MinSomaLabel = uilabel(app.MG3D_Panel);
+            app.MG3D_MinSomaLabel.Position = [350 47 170 20];
+            app.MG3D_MinSomaLabel.Text = 'Minimum soma volume (um^3):';
+
+            app.MG3D_MinSomaField = uieditfield(app.MG3D_Panel, 'numeric');
+            app.MG3D_MinSomaField.Limits = [0 Inf];
+            app.MG3D_MinSomaField.Value = 100;
+            app.MG3D_MinSomaField.Position = [530 47 40 20];
+
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
         end
@@ -1876,3 +3168,4 @@ classdef Multires_ML_Microscopy < matlab.apps.AppBase
         end
     end
 end
+
